@@ -683,10 +683,10 @@ ifneq ($(wildcard ./prebuild/ate-broadcom.o),)
 ate-broadcom.o:
 	@-cp -f ./prebuild/ate-broadcom.o .
 endif
-ifneq ($(wildcard ./prebuild/ate.o),)
-ate.o:
-	@-cp -f ./prebuild/ate.o .
-endif
+#ifneq ($(wildcard ./prebuild/ate.o),)
+#ate.o:
+#	@-cp -f ./prebuild/ate.o .
+#endif
 ifeq ($(BUILD_NAME), RT-AC68U)
 ifneq ($(wildcard ./prebuild/cfe.o),)
 cfe.o:
@@ -729,12 +729,12 @@ agg_brcm.o:
 endif
 endif
 
-ifeq ($(and $(CONFIG_BCMWL5),$(RTCONFIG_DUALWAN)),y)
-ifneq ($(wildcard ./prebuild/dualwan.o),)
-dualwan.o:
-	@-cp -f ./prebuild/dualwan.o .
-endif
-endif
+#ifeq ($(and $(CONFIG_BCMWL5),$(RTCONFIG_DUALWAN)),y)
+#ifneq ($(wildcard ./prebuild/dualwan.o),)
+#dualwan.o:
+#	@-cp -f ./prebuild/dualwan.o .
+#endif
+#endif
 
 %.o: %.c
 	@echo " [rc] CC $@"
