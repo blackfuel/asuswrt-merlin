@@ -1,7 +1,30 @@
 Asuswrt-Merlin Changelog
 ========================
 
-380.60 (xx-xxx-2016)
+380.61 (4-Aug-2016)
+   - FIXED: Connected OpenVPN clients reporting as disconnected
+            on the status page following any wireless config change
+            (Asus bug)
+   - FIXED: OpenVPN server would report being "Initializing"
+            while it already was ready, follwoing any
+            wireless config change (Asus bug)
+   - FIXED: Various stability issues with minidlna (reverted some
+            of Asus's customizations)
+
+
+380.61 Beta 1 (31-July-2016)
+   - NEW: Merged with GPL 3831.
+   - CHANGED: updated dropbear to 2016.74.
+   - FIXED: Do not enforce b/g mode as "auto" if wireless mode
+            is also set to Auto.
+
+
+380.60
+    There was no non-beta release, due to limited model support
+    and unsolved WAN stability issues.
+
+
+380.60 Beta 2 (5-July-2016)
     IMPORTANT: The firmware image file format was changed by Asus.
                Starting with 380.60, you will no longer be able to
                flash versions older than 380.60, or Asus versions
@@ -19,8 +42,6 @@ Asuswrt-Merlin Changelog
            redirection to router.asus.com (defaults to disabled)
     - CHANGED: Updated OpenVPN to 2.3.11
     - CHANGED: Allow to specify IPv6 prefixes up to 126 on the IPv6 config
-    - CHANGED: Roaming Assistant allow threshold to go as high as -50 (was 
-               previously limited to -70)
     - CHANGED: Networkmap will now announce itself as "Asuswrt/networkmap"
                when connecting to LAN's web services.
     - FIXED: OpenVPN server instances weren't properly reporting
@@ -36,6 +57,8 @@ Asuswrt-Merlin Changelog
              in the networkmap client popup (Asus bug)
     - FIXED: Router wouldn't run SMB to provide browser master
              or Wins services if no USB disk was plugged
+    - FIXED: Router would sometime fail to renew a WAN DHCP lease.
+             (fix by theMIROn)
 
 
 380.59 (10-May-2016)
