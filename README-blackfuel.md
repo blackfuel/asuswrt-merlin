@@ -3,7 +3,7 @@ blackfuel / asuswrt-merlin
 
 This is an enhanced version of Asuswrt - the firmware used by all recent Asus routers.
 
-The goal of this project is to leverage the efforts of the excellent Asuswrt-Merlin project and to extend it with additional kernel features that make your router more useful, reliable and secure.
+The goal of this project is to leverage the efforts of the excellent Asuswrt-Merlin project and to extend it with additional kernel features that will make your router more useful, reliable and secure.
 
 Useful
 ------
