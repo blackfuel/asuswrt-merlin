@@ -39,7 +39,7 @@
 #include "sysdeps.h"
 #include <linux/version.h>
 
-#if defined(RTCONFIG_USB) && defined(RTCONFIG_USB_MODEM)
+#if defined(RTCONFIG_USB) //&& defined(RTCONFIG_USB_MODEM)
 #include <usb_info.h>
 #endif
 
