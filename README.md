@@ -1,9 +1,7 @@
 blackfuel / asuswrt-merlin
 ==========================
 
-This is an enhanced version of Asuswrt - the firmware used by all recent Asus routers.
-
-The goal of this project is to leverage the efforts of the excellent Asuswrt-Merlin project and to extend it with additional kernel features that will make your router more useful, reliable and secure.
+The goal of this project is to leverage the efforts of the excellent Asuswrt-Merlin project and to extend it with additional kernel features that will make your router more useful, reliable and secure.  It is an enhanced version of Asuswrt - the firmware used by all recent Asus routers.
 
 Useful
 ------
@@ -21,7 +19,7 @@ Secure
 - Real-time disk encryption with dm-crypt and LUKS secures your NAS.  For example, now you can run an E-mail server on your router and it will be secured with disk encryption.  I found success with the XMail and Dovecot packages from the Entware-NG repository, as a reliable IMAP/POP3/SMTP service running on your router.  It is really amazing what this little router is capable of.
 - An Arduino Pro Mini 3.3V is used to temporarily write a passphrase into the router's RAM, for the purpose of mounting an encrypted disk at startup, without needing to permanently store the passphrase inside the router itself.  Once the router has mounted the encrypted disk, it simply deletes its copy of the passphrase, for security purposes.  If your router and external USB storage device are ever taken from you, the passphrase is kept safe inside the Arduino microcontroller.  It can be conveniently connected and disconnected from the router, or tethered on a long cable up to 40 meters away.  Perhaps my Arduino is hidden in the wall, or accesses another Arduino over a wireless link to fetch the passphrase? 
 
-Who doesn't love these types of features?
+**Who doesn't love these types of features?*
 
 At this time, the supported devices are:
 
@@ -31,3 +29,12 @@ At this time, the supported devices are:
 
 The USB modem and WiMAX support is disabled in this version of the kernel because it was not compatible with the USB serial port drivers.
 
+_**This firmware's filesystem has two new root folders that contain additional pre-built programs.**_
+
+**/native**
+
+    `Pre-built programs linked against the Asuswrt libraries, such as ntpd and dnscrypt.`
+
+**/entware**
+
+    `Pre-built Entware-NG programs linked against the Entware-NG libraries, such as cryptsetup.`
