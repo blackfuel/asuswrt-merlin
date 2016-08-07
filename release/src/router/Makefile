@@ -1016,7 +1016,7 @@ endif
 
 	@cd $(TARGETDIR) && $(TOP)/others/rootprep${BCMEX}.sh
 	[ -f /etc/ssl/certs/ca-certificates.crt ] && cp -pfv /etc/ssl/certs/ca-certificates.crt $(TARGETDIR)/rom/ca-bundle.crt
-	[ -d $(SRCBASE)/../../../asuswrt-merlin-addon/staging ] && cp -afv $(SRCBASE)/../../../asuswrt-merlin-addon/staging/* $(TARGETDIR)
+	[ -d $${PWD%%/release*}/../asuswrt-merlin-addon/staging ] && cp -afv $${PWD%%/release*}/../asuswrt-merlin-addon/staging/* $(TARGETDIR)
 	@echo ---
 
 ifeq ($(RTCONFIG_QCA),y)
