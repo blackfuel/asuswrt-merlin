@@ -34,4 +34,4 @@ The USB modem and WiMAX support is disabled in this version of the kernel becaus
 Folder | Description
 ------ | -----------
 **/native** | *Pre-built programs linked against the Asuswrt libraries, such as ntpd and dnscrypt.*
-**/entware** | *Pre-built Entware-NG programs linked against the Entware-NG libraries, such as cryptsetup.*
+**/entware** | *Pre-built programs linked against the Entware-NG libraries, such as cryptsetup.*
