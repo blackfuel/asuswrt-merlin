@@ -29,12 +29,12 @@ At this time, the supported devices are:
 
 The USB modem and WiMAX support is disabled in this version of the kernel because it was not compatible with the USB serial port drivers.
 
-_**This firmware's filesystem has two new root folders that contain additional pre-built programs.**_
+**This firmware's filesystem has two new root folders that contain additional pre-built programs.**
 
 **/native**
 
-    `Pre-built programs linked against the Asuswrt libraries, such as ntpd and dnscrypt.`
+    Pre-built programs linked against the Asuswrt libraries, such as ntpd and dnscrypt.
 
 **/entware**
 
-    `Pre-built Entware-NG programs linked against the Entware-NG libraries, such as cryptsetup.`
+    Pre-built Entware-NG programs linked against the Entware-NG libraries, such as cryptsetup.
