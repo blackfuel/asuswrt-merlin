@@ -301,7 +301,7 @@ static inline int bitmap_bytes(ip_set_ip_t a, ip_set_ip_t b)
 }
 
 /* General limit for the elements in a set */
-#define MAX_RANGE 0x0000FFFF
+#define MAX_RANGE 0x000FFFFF
 
 /* Alignment: 'unsigned long' unsupported */
 #define IPSET_ALIGNTO		4
