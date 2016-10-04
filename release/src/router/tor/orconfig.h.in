@@ -286,6 +286,15 @@
 /* Define to 1 if you have the `prctl' function. */
 #undef HAVE_PRCTL
 
+<<<<<<< HEAD
+=======
+/* Define to 1 if you have the `pthread_condattr_setclock' function. */
+#undef HAVE_PTHREAD_CONDATTR_SETCLOCK
+
+/* Define to 1 if you have the `pthread_create' function. */
+#undef HAVE_PTHREAD_CREATE
+
+>>>>>>> upstream/master
 /* Define to 1 if you have the `pthread_condattr_setclock' function. */
 #undef HAVE_PTHREAD_CONDATTR_SETCLOCK
 
