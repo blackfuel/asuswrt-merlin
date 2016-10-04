@@ -2659,6 +2659,8 @@ tor/Makefile:
 tor-install: tor
 	install -D tor/src/or/tor $(INSTALLDIR)/tor/usr/sbin/Tor
 	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor
+	install -Dpv tor/src/config/geoip $(TARGETDIR)/rom/tor/geoip
+	install -Dpv tor/src/config/geoip6 $(TARGETDIR)/rom/tor/geoip6
 
 tor-clean:
 	[ ! -f tor/Makefile ] || $(MAKE) -C tor clean
