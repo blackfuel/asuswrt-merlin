@@ -1023,7 +1023,6 @@ ifneq ($(RTCONFIG_OPTIMIZE_SHARED_LIBS),y)
 endif
 
 	@cd $(TARGETDIR) && $(TOP)/others/rootprep${BCMEX}.sh
-	[ -f /etc/ssl/certs/ca-certificates.crt ] && cp -pfv /etc/ssl/certs/ca-certificates.crt $(TARGETDIR)/rom/ca-bundle.crt
 	[ -d $${PWD%%/release*}/../asuswrt-merlin-addon/staging ] && cp -afv $${PWD%%/release*}/../asuswrt-merlin-addon/staging/* $(TARGETDIR)
 	@echo ---
 
