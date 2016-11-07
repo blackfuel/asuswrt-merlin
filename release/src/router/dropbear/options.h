@@ -41,7 +41,7 @@
  * Both of these flags can be defined at once, don't compile without at least
  * one of them. */
 #define NON_INETD_MODE
-#define INETD_MODE
+/* #define INETD_MODE */
 
 /* Setting this disables the fast exptmod bignum code. It saves ~5kB, but is
  * perhaps 20% slower for pubkey operations (it is probably worth experimenting
@@ -134,7 +134,7 @@ If you test it please contact the Dropbear author */
 #define DROPBEAR_SHA1_96_HMAC
 #define DROPBEAR_SHA2_256_HMAC
 #define DROPBEAR_SHA2_512_HMAC
-#define DROPBEAR_MD5_HMAC
+/* #define DROPBEAR_MD5_HMAC */
 
 /* You can also disable integrity. Don't bother disabling this if you're
  * still using a cipher, it's relatively cheap. If you disable this it's dead
