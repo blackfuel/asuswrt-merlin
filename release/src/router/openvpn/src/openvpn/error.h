@@ -143,12 +143,6 @@ extern int x_msg_line_num;
 /** Check muting filter */
 bool dont_mute (unsigned int flags);
 
-/** Return true if flags represent an enabled, not muted log level */
-static inline bool msg_test (unsigned int flags)
-{
-  return ((flags & M_DEBUG_LEVEL) <= x_debug_level) && dont_mute (flags);
-}
-
 /* Macro to ensure (and teach static analysis tools) we exit on fatal errors */
 #define EXIT_FATAL(flags) do { if ((flags) & M_FATAL) _exit(1); } while (false)
 
@@ -228,6 +222,14 @@ FILE *msg_fp(const unsigned int flags);
 void assert_failed (const char *filename, int line, const char *condition)
   __attribute__((__noreturn__));
 
+/* Poor-man's static_assert() for when not supplied by assert.h, taken from
+ * Linux's sys/cdefs.h under GPLv2 */
+#ifndef static_assert
+#define static_assert(expr, diagnostic) \
+    extern int (*__OpenVPN_static_assert_function (void)) \
+      [!!sizeof (struct { int __error_if_negative: (expr) ? 2 : -1; })]
+#endif
+
 #ifdef ENABLE_DEBUG
 void crash (void); /* force a segfault (debugging only) */
 #endif
@@ -238,6 +240,12 @@ static inline bool
 check_debug_level (unsigned int level)
 {
   return (level & M_DEBUG_LEVEL) <= x_debug_level;
+}
+
+/** Return true if flags represent an enabled, not muted log level */
+static inline bool msg_test (unsigned int flags)
+{
+  return check_debug_level (flags) && dont_mute (flags);
 }
 
 /* Call if we forked */

@@ -4119,7 +4119,10 @@ int init_nvram(void)
 
 		if (!nvram_get("ct_max"))
 			nvram_set("ct_max", "300000");
-		add_rc_support("mssid 2.4G 5G update usbX2");
+		add_rc_support("mssid 2.4G 5G usbX2");
+#ifdef RTCONFIG_MERLINUPDATE
+		add_rc_support("update");
+#endif
 		add_rc_support("switchctrl"); // broadcom: for jumbo frame only
 		add_rc_support("manual_stb");
 		add_rc_support("pwrctrl");
@@ -4282,7 +4285,10 @@ int init_nvram(void)
 
 		if (!nvram_get("ct_max"))
 			nvram_set("ct_max", "300000");
-		add_rc_support("mssid 2.4G 5G update usbX2");
+		add_rc_support("mssid 2.4G 5G usbX2");
+#ifdef RTCONFIG_MERLINUPDATE
+		add_rc_support("update");
+#endif
 		add_rc_support("switchctrl"); // broadcom: for jumbo frame only
 		add_rc_support("manual_stb");
 		add_rc_support("pwrctrl");
@@ -4502,7 +4508,10 @@ int init_nvram(void)
 
 		if (!nvram_get("ct_max"))
 			nvram_set("ct_max", "300000");
-		add_rc_support("mssid 2.4G 5G update usbX2");
+		add_rc_support("mssid 2.4G 5G usbX2");
+#ifdef RTCONFIG_MERLINUPDATE
+		add_rc_support("update");
+#endif
 		add_rc_support("switchctrl"); // broadcom: for jumbo frame only
 		add_rc_support("manual_stb");
 		add_rc_support("pwrctrl");
@@ -4726,7 +4735,10 @@ int init_nvram(void)
 
 		if (!nvram_get("ct_max"))
 			nvram_set("ct_max", "300000");
-		add_rc_support("mssid 2.4G 5G update usbX2");
+		add_rc_support("mssid 2.4G 5G usbX2");
+#ifdef RTCONFIG_MERLINUPDATE
+		add_rc_support("update");
+#endif
 		add_rc_support("switchctrl"); // broadcom: for jumbo frame only
 		add_rc_support("manual_stb");
 		add_rc_support("pwrctrl");
@@ -4869,7 +4881,10 @@ int init_nvram(void)
 
 		if (!nvram_get("ct_max"))
 			nvram_set("ct_max", "300000");
-		add_rc_support("mssid 2.4G 5G update usbX2");
+		add_rc_support("mssid 2.4G 5G usbX2");
+#ifdef RTCONFIG_MERLINUPDATE
+		add_rc_support("update");
+#endif
 		add_rc_support("switchctrl"); // broadcom: for jumbo frame only
 		add_rc_support("manual_stb");
 		add_rc_support("pwrctrl");
@@ -4979,7 +4994,10 @@ int init_nvram(void)
 		}
 		if (!nvram_get("ct_max"))
 			nvram_set("ct_max", "300000");
-		add_rc_support("mssid 2.4G 5G update usbX2");
+		add_rc_support("mssid 2.4G 5G usbX2");
+#ifdef RTCONFIG_MERLINUPDATE
+		add_rc_support("update");
+#endif
 		add_rc_support("switchctrl"); // broadcom: for jumbo frame only
 		add_rc_support("manual_stb");
 		add_rc_support("pwrctrl");
@@ -5770,6 +5788,7 @@ fa_mode_adjust()
 	if (nvram_get_int("sw_mode") == SW_MODE_ROUTER || nvram_get_int("sw_mode") == SW_MODE_AP) {
 		if (!nvram_match("ctf_disable_force", "1")
 			&& nvram_get_int("ctf_fa_cap")
+			&& !nvram_get_int("cstats_enable")
 			&& !nvram_match("gmac3_enable", "1")
  			&& !nvram_get_int("qos_enable")
 		) {
@@ -6364,8 +6383,6 @@ int init_main(int argc, char *argv[])
 			if ((state == SIGTERM /* REBOOT */) ||
 				(state == SIGQUIT /* HALT */)) {
 #ifdef RTCONFIG_USB
-				sync();
-				sleep(2);
 				remove_storage_main(1);
 				if (!g_reboot) {
 #if !(defined(RTN56UB1) || defined(RTN56UB2))
@@ -6379,6 +6396,7 @@ int init_main(int argc, char *argv[])
 				}
 #endif
 				shutdn(state == SIGTERM /* REBOOT */);
+				sync(); sync(); sync();
 				exit(0);
 			}
 			if (state == SIGINT /* STOP */) {
