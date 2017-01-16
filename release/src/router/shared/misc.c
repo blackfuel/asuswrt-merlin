@@ -1954,7 +1954,7 @@ int get_yandex_dns(int family, int mode, char **server, int max_count)
 }
 #endif
 
-#ifdef RTCONFIG_BWDPI
+//#ifdef RTCONFIG_BWDPI
 /*
 	usage in rc or bwdpi for checking service
 */
@@ -1987,7 +1987,7 @@ int check_bwdpi_nvram_setting()
 
 	return enabled;
 }
-#endif
+//#endif
 
 /*
 	transfer timestamp into date
