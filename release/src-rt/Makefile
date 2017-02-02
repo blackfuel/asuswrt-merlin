@@ -2142,17 +2142,6 @@ fi; \
 			sed -i "/CONFIG_USB_WDM/d" $(1); \
 			echo "# CONFIG_USB_WDM is not set" >>$(1); \
 		fi; \
-	else \
-		sed -i "/CONFIG_USB_SERIAL/d" $(1); \
-		echo "# CONFIG_USB_SERIAL is not set" >>$(1); \
-		sed -i "/CONFIG_USB_ACM/d" $(1); \
-		echo "# CONFIG_USB_ACM is not set" >>$(1); \
-		sed -i "/CONFIG_USB_USBNET/d" $(1); \
-		echo "# CONFIG_USB_USBNET is not set" >>$(1); \
-		sed -i "/CONFIG_USB_IPHETH/d" $(1); \
-		echo "# CONFIG_USB_IPHETH is not set" >>$(1); \
-		sed -i "/CONFIG_USB_WDM/d" $(1); \
-		echo "# CONFIG_USB_WDM is not set" >>$(1); \
 	fi; \
 	if [ "$(ARMCPUSMP)" = "up" ]; then \
 		sed -i "/CONFIG_GENERIC_CLOCKEVENTS_BROADCAST/d" $(1); \
@@ -2179,11 +2168,17 @@ fi; \
 		if [ "$(BCMWL6A)" = "y" ]; then \
 			sed -i "/CONFIG_IP_ADVANCED_ROUTER/d" $(1); \
 			echo "CONFIG_IP_ADVANCED_ROUTER=y" >>$(1); \
+			sed -i "/CONFIG_ASK_IP_FIB_HASH/d" $(1); \
 			echo "CONFIG_ASK_IP_FIB_HASH=y" >>$(1); \
+			sed -i "/CONFIG_IP_FIB_TRIE/d" $(1); \
 			echo "# CONFIG_IP_FIB_TRIE is not set" >>$(1); \
+			sed -i "/CONFIG_IP_MULTIPLE_TABLES/d" $(1); \
 			echo "CONFIG_IP_MULTIPLE_TABLES=y" >>$(1); \
+			sed -i "/CONFIG_IP_ROUTE_MULTIPATH/d" $(1); \
 			echo "CONFIG_IP_ROUTE_MULTIPATH=y" >>$(1); \
+			sed -i "/CONFIG_IP_ROUTE_VERBOSE/d" $(1); \
 			echo "# CONFIG_IP_ROUTE_VERBOSE is not set" >>$(1); \
+			sed -i "/CONFIG_IP_MROUTE_MULTIPLE_TABLES/d" $(1); \
 			echo "CONFIG_IP_MROUTE_MULTIPLE_TABLES=y" >>$(1); \
 		fi; \
 	fi; \
@@ -2370,12 +2365,6 @@ fi; \
 		echo "CONFIG_LINUX_MTD=32" >>$(1); \
 	else \
 		echo "CONFIG_LINUX_MTD=$(LINUX_MTD)" >>$(1); \
-	fi; \
-	sed -i "/CONFIG_NF_CONNTRACK_EVENTS/d" $(1); \
-	if [ "$(BWDPI)" = "y" ]; then \
-		echo "CONFIG_NF_CONNTRACK_EVENTS=y" >>$(1); \
-	else \
-		echo "# CONFIG_NF_CONNTRACK_EVENTS is not set" >>$(1); \
 	fi; \
 	if [ "$(USB_DEBUG)" = "y" ]; then \
 		sed -i "/CONFIG_USB_DEBUG/d" $(1); \
