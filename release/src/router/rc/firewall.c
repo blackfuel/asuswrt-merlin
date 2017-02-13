@@ -2355,8 +2355,8 @@ filter_setting(char *wan_if, char *wan_ip, char *lan_if, char *lan_ip, char *log
 	    ":SECURITY - [0:0]\n"
 #ifdef RTCONFIG_PARENTALCTRL
 	    ":PControls - [0:0]\n"
-#endif
 	    ":NSFW - [0:0]\n"
+#endif
 	    ":logaccept - [0:0]\n"
 	    ":logdrop - [0:0]\n",
 	nvram_match("fw_enable_x", "1") ? "DROP" : "ACCEPT");
@@ -2370,8 +2370,8 @@ filter_setting(char *wan_if, char *wan_ip, char *lan_if, char *lan_ip, char *log
 		    ":UPNP - [0:0]\n"
 #ifdef RTCONFIG_PARENTALCTRL
 		    ":PControls - [0:0]\n"
-#endif
 		    ":NSFW - [0:0]\n"
+#endif
 		    ":logaccept - [0:0]\n"
 		    ":logdrop - [0:0]\n",
 		nvram_match("ipv6_fw_enable", "1") ? "DROP" : "ACCEPT");
@@ -2861,13 +2861,13 @@ TRACE_PT("writing Parental Control\n");
 	// FILTER from LAN to WAN
 	// Rules for MAC Filter and LAN to WAN Filter
 	// Drop rules always before Accept
-	strcpy(chain, "NSFW");	// Less code changes by using a var like the original code did
 #ifdef RTCONFIG_PARENTALCTRL
+	strcpy(chain, "NSFW");	// Less code changes by using a var like the original code did
 	if(nvram_get_int("MULTIFILTER_ALL") != 0 && count_pc_rules() > 0)
 		fprintf(fp, "-A PControls -j %s\n", chain);
-#endif
 	// chain used for other things like pptp filtering, so always jump to it
 	fprintf(fp, "-A FORWARD -j %s\n", chain);
+#endif
 
 	if (nvram_match("fw_lw_enable_x", "1"))
 	{
@@ -3324,8 +3324,8 @@ filter_setting2(char *lan_if, char *lan_ip, char *logaccept, char *logdrop)
 	    ":SECURITY - [0:0]\n"
 #ifdef RTCONFIG_PARENTALCTRL
 	    ":PControls - [0:0]\n"
-#endif
 	    ":NSFW - [0:0]\n"
+#endif
 	    ":logaccept - [0:0]\n"
 	    ":logdrop - [0:0]\n",
 	nvram_match("fw_enable_x", "1") ? "DROP" : "ACCEPT");
@@ -3339,8 +3339,8 @@ filter_setting2(char *lan_if, char *lan_ip, char *logaccept, char *logdrop)
 		    ":UPNP - [0:0]\n"
 #ifdef RTCONFIG_PARENTALCTRL
 		    ":PControls - [0:0]\n"
-#endif
 		    ":NSFW - [0:0]\n"
+#endif
 		    ":logaccept - [0:0]\n"
 		    ":logdrop - [0:0]\n",
 		nvram_match("ipv6_fw_enable", "1") ? "DROP" : "ACCEPT");
@@ -3860,13 +3860,13 @@ TRACE_PT("writing Parental Control\n");
 	// FILTER from LAN to WAN
 	// Rules for MAC Filter and LAN to WAN Filter
 	// Drop rules always before Accept
-	strcpy(chain, "NSFW");  // Less code changes by using a var like the original code did
 #ifdef RTCONFIG_PARENTALCTRL
+	strcpy(chain, "NSFW");  // Less code changes by using a var like the original code did
 	if(nvram_get_int("MULTIFILTER_ALL") != 0 && count_pc_rules() > 0)
 		fprintf(fp, "-A PControls -j %s\n", chain);
-#endif
 	// chain used for other things like pptp filtering, so always jump to it
 	fprintf(fp, "-A FORWARD -j %s\n", chain);
+#endif
 
 	if (nvram_match("fw_lw_enable_x", "1"))
 	{

@@ -1464,11 +1464,11 @@ void start_vpnserver(int serverNum)
 		fprintf(fp, "#!/bin/sh\n");
 		sprintf(&buffer[0], "vpn_server%d_proto", serverNum);
 		strncpy(&buffer[0], nvram_safe_get(&buffer[0]), BUF_SIZE);
-		fprintf(fp, "iptables -t nat -I PREROUTING -p %s ", strtok(&buffer[0], "-"));
-		sprintf(&buffer[0], "vpn_server%d_port", serverNum);
-		fprintf(fp, "--dport %d -j ACCEPT\n", nvram_get_int(&buffer[0]));
-		sprintf(&buffer[0], "vpn_server%d_proto", serverNum);
-		strncpy(&buffer[0], nvram_safe_get(&buffer[0]), BUF_SIZE);
+//		fprintf(fp, "iptables -t nat -I PREROUTING -p %s ", strtok(&buffer[0], "-"));
+//		sprintf(&buffer[0], "vpn_server%d_port", serverNum);
+//		fprintf(fp, "--dport %d -j ACCEPT\n", nvram_get_int(&buffer[0]));
+//		sprintf(&buffer[0], "vpn_server%d_proto", serverNum);
+//		strncpy(&buffer[0], nvram_safe_get(&buffer[0]), BUF_SIZE);
 		fprintf(fp, "iptables -I INPUT -p %s ", strtok(&buffer[0], "-"));
 		sprintf(&buffer[0], "vpn_server%d_port", serverNum);
 		fprintf(fp, "--dport %d -j ACCEPT\n", nvram_get_int(&buffer[0]));
