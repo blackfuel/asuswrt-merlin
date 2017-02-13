@@ -1243,30 +1243,6 @@ void nat_setting(char *wan_if, char *wan_ip, char *wanx_if, char *wanx_ip, char 
 	//if (nvram_match("misc_natlog_x", "1"))
 	// 	fprintf(fp, "-A PREROUTING -i %s -j LOG --log-prefix ALERT --log-level 4\n", wan_if);
 
-#ifdef RTCONFIG_AUTOCOVER_SIP
-	if(nvram_get_int("atcover_sip") == 1 && !strcmp(lan_ip, nvram_default_get("lan_ipaddr")) && strcmp(lan_ip, nvram_safe_get("atcover_sip_ip"))){
-		int dst_port;
-
-		if(nvram_get_int("atcover_sip_type") == 1)
-			dst_port = 80;
-		else
-			dst_port = 18017;
-
-		fprintf(fp, "-A PREROUTING -d %s -p tcp --dport 80 -j DNAT --to-destination %s:%d\n",
-				nvram_safe_get("atcover_sip_ip"),
-				lan_ip,
-				dst_port
-				);
-	}
-#endif
-
-	/* VSERVER chain */
-	if (inet_addr_(wan_ip))
-		fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wan_ip);
-	/* prerouting physical WAN port connection (DHCP+PPP case) */
-	if (strcmp(wan_if, wanx_if) && inet_addr_(wanx_ip))
-		fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wanx_ip);
-
 #ifdef RTCONFIG_TOR
 	 if(nvram_match("Tor_enable", "1")){
 		nv = strdup(nvram_safe_get("Tor_redir_list"));
@@ -1300,6 +1276,30 @@ void nat_setting(char *wan_if, char *wan_ip, char *wanx_if, char *wanx_ip, char 
 		}
 	}
 #endif
+
+#ifdef RTCONFIG_AUTOCOVER_SIP
+	if(nvram_get_int("atcover_sip") == 1 && !strcmp(lan_ip, nvram_default_get("lan_ipaddr")) && strcmp(lan_ip, nvram_safe_get("atcover_sip_ip"))){
+		int dst_port;
+
+		if(nvram_get_int("atcover_sip_type") == 1)
+			dst_port = 80;
+		else
+			dst_port = 18017;
+
+		fprintf(fp, "-A PREROUTING -d %s -p tcp --dport 80 -j DNAT --to-destination %s:%d\n",
+				nvram_safe_get("atcover_sip_ip"),
+				lan_ip,
+				dst_port
+				);
+	}
+#endif
+
+	/* VSERVER chain */
+	if (inet_addr_(wan_ip))
+		fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wan_ip);
+	/* prerouting physical WAN port connection (DHCP+PPP case) */
+	if (strcmp(wan_if, wanx_if) && inet_addr_(wanx_ip))
+		fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wanx_ip);
 
 #ifdef RTCONFIG_YANDEXDNS
 	if (nvram_get_int("yadns_enable_x"))
@@ -1534,14 +1534,6 @@ void nat_setting2(char *lan_if, char *lan_ip, char *logaccept, char *logdrop)	//
 		//if (nvram_match("misc_natlog_x", "1"))
 		//	fprintf(fp, "-A PREROUTING -i %s -j LOG --log-prefix ALERT --log-level 4\n", wan_if);
 
-		/* VSERVER chain */
-		if(inet_addr_(wan_ip))
-			fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wan_ip);
-
-		// wanx_if != wan_if means DHCP+PPP exist?
-		if (dualwan_unit__nonusbif(unit) && strcmp(wan_if, wanx_if) && inet_addr_(wanx_ip))
-			fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wanx_ip);
-
 #ifdef RTCONFIG_TOR
 	 if(nvram_match("Tor_enable", "1")){
 		nv = strdup(nvram_safe_get("Tor_redir_list"));
@@ -1575,6 +1567,15 @@ void nat_setting2(char *lan_if, char *lan_ip, char *logaccept, char *logdrop)	//
 		}
 	}
 #endif
+
+		/* VSERVER chain */
+		if(inet_addr_(wan_ip))
+			fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wan_ip);
+
+		// wanx_if != wan_if means DHCP+PPP exist?
+		if (dualwan_unit__nonusbif(unit) && strcmp(wan_if, wanx_if) && inet_addr_(wanx_ip))
+			fprintf(fp, "-A PREROUTING -d %s -j VSERVER\n", wanx_ip);
+
 	}
 	if (!fp) {
 		sprintf(name, "%s___", NAT_RULES);
