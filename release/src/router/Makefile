@@ -2686,6 +2686,12 @@ tor/Makefile:
 tor-install: tor
 	install -D tor/src/or/tor $(INSTALLDIR)/tor/usr/sbin/Tor
 	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor
+	install -D tor/src/tools/tor-checkkey $(INSTALLDIR)/tor/usr/sbin/Tor-checkkey
+	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor-checkkey
+	install -D tor/src/tools/tor-gencert $(INSTALLDIR)/tor/usr/sbin/Tor-gencert
+	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor-gencert
+	install -D tor/src/tools/tor-resolve $(INSTALLDIR)/tor/usr/sbin/Tor-resolve
+	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor-resolve
 	install -Dpv tor/src/config/geoip $(TARGETDIR)/rom/tor/geoip
 	install -Dpv tor/src/config/geoip6 $(TARGETDIR)/rom/tor/geoip6
 
