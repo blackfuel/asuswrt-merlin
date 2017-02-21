@@ -33,3 +33,10 @@ Folder | Description
 ------ | -----------
 **/native** | *Pre-built programs linked against the Asuswrt libraries, such as ntpd and dnscrypt.*
 **/entware** | *Pre-built programs linked against the Entware-NG libraries, such as cryptsetup.*
+
+
+Donations
+---------
+Any amount will help.  Thank you.  
+
+**Bitcoin: 1i5Tpno73gJdr1XdmoxT6CjVFGef5KkZM**
