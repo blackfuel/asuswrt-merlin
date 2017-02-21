@@ -35,8 +35,6 @@ Folder | Description
 **/entware** | *Pre-built programs linked against the Entware-NG libraries, such as cryptsetup.*
 
 
-Donations
----------
-Any amount will help.  Thank you.  
+### Donations may be sent to my Bitcoin address: 1i5Tpno73gJdr1XdmoxT6CjVFGef5KkZM
+Any amount is appreciated.  This helps me share new material and pay the bills.  Thank you.
 
-**Bitcoin: 1i5Tpno73gJdr1XdmoxT6CjVFGef5KkZM**
