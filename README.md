@@ -26,6 +26,7 @@ At this time, the supported devices are:
 - RT-AC56U
 - RT-AC68U
 - RT-AC88U
+- RT-AC3100
 
 **This firmware's filesystem has two new root folders that contain additional programs.**
 
