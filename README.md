@@ -32,8 +32,8 @@ At this time, the supported devices are:
 
 Folder | Description
 ------ | -----------
-**/native** | *Pre-built programs linked against the Asuswrt libraries, such as ntpd and dnscrypt.*
-**/entware** | *Pre-built programs linked against the Entware-NG libraries, such as cryptsetup.*
+**/native** | *Pre-built programs linked against the AsusWRT libraries, such as ntpd and dnscrypt.*
+**/entware** | *Pre-built programs linked against the Entware-ng libraries, such as cryptsetup.*
 
 
 ### Donations may be sent to my Bitcoin address: 1i5Tpno73gJdr1XdmoxT6CjVFGef5KkZM
