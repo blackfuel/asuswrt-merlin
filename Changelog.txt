@@ -2,8 +2,7 @@ Asuswrt-Merlin Changelog
 ========================
 
 380.66 beta (xx-xxx-2017)
-   - NEW: Merged with GPL 380_7378 (with many binary blobs
-          from 380_7266.
+   - NEW: Merged with GPL 380_7378
           Notable changes:
              * Port forwards can select a specific source IP
              * Improved security against ssh break-in attempts
@@ -22,10 +21,6 @@ Asuswrt-Merlin Changelog
              protocol.
   - CHANGED: Updated Tor to 0.2.9.10
   - CHANGED: Updated nano to 2.8.1
-  - CHANGED: Policy-based routing tables will now only contain
-             routes related to their specific tunnel.  This
-             ensures that global routes cannot override a
-             tunnel's policies.
   - CHANGED: SSL certificate generated for httpds will now
              contain SANs for hostname, router.asus.com, IP
              and DDNS hostname.
