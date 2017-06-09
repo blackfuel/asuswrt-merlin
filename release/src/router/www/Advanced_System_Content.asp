@@ -20,9 +20,40 @@
 <script language="JavaScript" type="text/javascript" src="/help.js"></script>
 <script language="JavaScript" type="text/javascript" src="/client_function.js"></script>
 <script language="JavaScript" type="text/javascript" src="/validator.js"></script>
-<script language-"JavaScript" type="text/javascript" src="/merlin.js"></script>
+<script language="JavaScript" type="text/javascript" src="/merlin.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
 <style>
+.contentM_qis{
+	width:740px;
+	margin-top:1200px;
+	margin-left:380px;
+	position:absolute;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	z-index:200;
+	background-color:#2B373B;
+	display:none;
+	/*behavior: url(/PIE.htc);*/
+}
+.QISform_wireless thead{
+	font-size:15px;
+	line-height:20px;
+	color:#FFFFFF;
+}
+
+.QISform_wireless th{
+	padding-left:10px;
+	*padding-left:30px;
+	font-size:12px;
+	font-weight:bolder;
+	color: #FFFFFF;
+	text-align:left;
+}
+
+.QISform_wireless li{
+	margin-top:10px;
+}
 .cancel{
 	border: 2px solid #898989;
 	border-radius:50%;
@@ -139,6 +170,7 @@ function initial(){
 	else{
 		hide_https_lanport(document.form.http_enable.value);
 		hide_https_wanport(document.form.http_enable.value);
+		hide_https_crt();
 	}	
 	
 	if(wifi_tog_btn_support || wifi_hw_sw_support || sw_mode == 2 || sw_mode == 4){		// wifi_tog_btn && wifi_hw_sw && hide WPS button behavior under repeater mode
@@ -317,8 +349,13 @@ function applyRule(){
 				|| document.form.http_enable.value != '<% nvram_get("http_enable"); %>'
 				|| document.form.misc_httpport_x.value != '<% nvram_get("misc_httpport_x"); %>'
 				|| document.form.misc_httpsport_x.value != '<% nvram_get("misc_httpsport_x"); %>'
+				|| getRadioItemCheck(document.form.https_crt_gen) == "1"
+				|| document.form.https_crt_cn.value != '<% nvram_get("https_crt_cn"); %>'
 			){
 			restart_httpd_flag = true;
+			if(document.form.https_crt_cn.value != '<% nvram_get("https_crt_cn"); %>'){
+				document.form.https_crt_gen.value = "1";
+			}
 			if(document.form.http_enable.value == "0"){	//HTTP
 				if(isFromWAN)
 					document.form.flag.value = "http://" + location.hostname + ":" + document.form.misc_httpport_x.value;
@@ -558,7 +595,7 @@ function validForm(){
 
 	if(document.form.http_passwd2.value.length > 0)	//password setting changed
 		alert("<#File_Pop_content_alert_desc10#>");
-		
+
 	return true;
 }
 
@@ -863,6 +900,15 @@ function hide_https_lanport(_value){
 function hide_https_wanport(_value){
 	document.getElementById("http_port").style.display = (_value == "1") ? "none" : "";	
 	document.getElementById("https_port").style.display = (_value == "0") ? "none" : "";	
+}
+
+function hide_https_crt(){
+	var protos = document.form.http_enable.value;
+	var savecrt = getRadioValue(document.form.https_crt_save);
+
+	document.getElementById("https_crt_save").style.display = (protos == "0" ? "none" : "");
+	document.getElementById("https_crt_san").style.display = (protos == "0" ? "none" : "");
+	document.getElementById("https_crt_gen").style.display = (protos != "0" && savecrt == "1" ? "" : "none");
 }
 
 // show clientlist
@@ -1217,10 +1263,62 @@ function control_all_rule_status(obj) {
 
 	show_http_clientlist();
 }
+
+function cal_panel_block(){
+	var blockmarginLeft;
+	if (window.innerWidth)
+		winWidth = window.innerWidth;
+	else if ((document.body) && (document.body.clientWidth))
+		winWidth = document.body.clientWidth;
+
+	if (document.documentElement  && document.documentElement.clientHeight && document.documentElement.clientWidth){
+		winWidth = document.documentElement.clientWidth;
+	}
+
+	if(winWidth >1050){
+		winPadding = (winWidth-1050)/2;
+		winWidth = 1105;
+		blockmarginLeft= (winWidth*0.15)+winPadding;
+	}
+	else if(winWidth <=1050){
+		blockmarginLeft= (winWidth)*0.15+document.body.scrollLeft;
+	}
+
+	document.getElementById("ssl_panel").style.marginLeft = blockmarginLeft+"px";
+}
+
+function show_cert() {
+        cal_panel_block();
+        $("#ssl_panel").fadeIn(300);
+}
+
+function hide_cert() {
+        this.FromObject ="0";
+        $("#ssl_panel").fadeOut(300);
+}
+
 </script>
 </head>
 
 <body onload="initial();" onunLoad="return unload_body();">
+	<div id="ssl_panel" class="contentM_qis" style="box-shadow: 3px 3px 10px #000;">
+		<table class="QISform_wireless" border=0 align="center" cellpadding="5" cellspacing="0">
+			<tr>
+				<div class="description_down" style="margin-left:10px;margin-top:10px;">Current certificate details</div>
+			</tr>
+			<tr>
+				<div style="margin-top:8px">
+					<textarea cols="63" rows="22" wrap="off" readonly="readonly" id="textarea" style="width:99%; font-family:'Courier New', Courier, mono; font-size:11px;background:#475A5F;color:#FFFFFF;"><% nvram_dump("sslcert",""); %></textarea>
+				</div>
+			</tr>
+			<tr>
+				<div style="margin-top:5px;width:100%;text-align:center;">
+					<input class="button_gen" style="margin-top:10px;margin-bottom:10px;" type="button" onclick="hide_cert();" value="Close">
+				</div>
+			</tr>
+		</table>
+	</div>
+
 <div id="TopBanner"></div>
 
 <div id="Loading" class="popup_bg"></div>
@@ -1530,7 +1628,7 @@ function control_all_rule_status(obj) {
 				<tr id="https_tr">
 					<th><#WLANConfig11b_AuthenticationMethod_itemname#></th>
 					<td>
-						<select name="http_enable" class="input_option" onchange="hide_https_lanport(this.value);hide_https_wanport(this.value);">
+						<select name="http_enable" class="input_option" onchange="hide_https_lanport(this.value);hide_https_wanport(this.value);hide_https_crt();">
 							<option value="0" <% nvram_match("http_enable", "0", "selected"); %>>HTTP</option>
 							<option value="1" <% nvram_match("http_enable", "1", "selected"); %>>HTTPS</option>
 							<option value="2" <% nvram_match("http_enable", "2", "selected"); %>>BOTH</option>
@@ -1545,7 +1643,27 @@ function control_all_rule_status(obj) {
 						<span id="https_access_page"></span>
 					</td>
 				</tr>
-				
+				<tr id="https_crt_save">
+					<th><a class="hintstyle" href="javascript:void(0);" onClick="openHint(50,21)">Use persistent certificate</a></th>
+					<td>
+						<input type="radio" name="https_crt_save" class="input" value="1" onClick="hide_https_crt();" <% nvram_match_x("", "https_crt_save", "1", "checked"); %>><#checkbox_Yes#>
+						<input type="radio" name="https_crt_save" class="input" value="0" onClick="hide_https_crt();" <% nvram_match_x("", "https_crt_save", "0", "checked"); %>><#checkbox_No#>
+					</td>
+				</tr>
+                                <tr id="https_crt_gen">
+                                        <th>Generate a new certificate</th>
+                                        <td>
+						<input type="radio" name="https_crt_gen" class="input" value="1" onClick="hide_https_crt();" <% nvram_match_x("", "https_crt_gen", "1", "checked"); %>><#checkbox_Yes#>
+						<input type="radio" name="https_crt_gen" class="input" value="0" onClick="hide_https_crt();" <% nvram_match_x("", "https_crt_gen", "0", "checked"); %>><#checkbox_No#>
+						<span id="https_crt_view" onclick="show_cert();" style="padding-left:25px;text-decoration:underline;cursor:pointer;">View current certificate</span>
+                                        </td>
+                                </tr>
+				<tr id="https_crt_san">
+					<th><a class="hintstyle" href="javascript:void(0);" onClick="openHint(50,22)">Certificate Subject Alternative Names</a></th>
+					<td>
+						<input type="text" name="https_crt_cn" value="<% nvram_get("https_crt_cn"); %>" autocomplete="off" class="input_32_table" maxlength="64" autocorrect="off" autocapitalize="off">
+					</td>
+				</tr>
 				<tr id="misc_http_x_tr">
 					<th><a class="hintstyle" href="javascript:void(0);" onClick="openHint(8,2);"><#FirewallConfig_x_WanWebEnable_itemname#></a></th>
 					<td>
