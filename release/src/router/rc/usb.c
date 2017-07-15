@@ -2023,7 +2023,6 @@ void write_ftpd_conf()
 	fprintf(fp, "listen=YES\n");
 #endif
 	fprintf(fp, "pasv_enable=YES\n");
-	fprintf(fp, "ssl_enable=NO\n");
 	fprintf(fp, "tcp_wrappers=NO\n");
 	strcpy(maxuser, nvram_safe_get("st_max_user"));
 	if ((atoi(maxuser)) > 0)
@@ -2053,6 +2052,18 @@ void write_ftpd_conf()
 	if(!strcmp(nvram_safe_get("enable_ftp_log"), "1")){
 		fprintf(fp, "xferlog_enable=YES\n");
 		fprintf(fp, "xferlog_file=/var/log/vsftpd.log\n");
+	}
+
+	if(nvram_get_int("ftp_tls")){
+		fprintf(fp, "ssl_enable=YES\n");
+		fprintf(fp, "rsa_cert_file=/jffs/ssl/ftp.crt\n");
+		fprintf(fp, "rsa_private_key_file=/jffs/ssl/ftp.key\n");
+
+		if(!check_if_file_exist("/jffs/ssl/ftp.key")||!check_if_file_exist("/jffs/ssl/ftp.crt")){
+			eval("gencert.sh", "ftp");
+		}
+	} else {
+		fprintf(fp, "ssl_enable=NO\n");
 	}
 
 	append_custom_config("vsftpd.conf", fp);
