@@ -74,13 +74,10 @@ void start_vpnclient(int clientNum)
 		return;
 	}
 
-        for ( i = 1; i < 4; i++ ) {
-		if (!nvram_get_int("ntp_ready")) {
-			sleep(i*i);
-		} else {
-			i = 4;
-		}
-        }
+	i = 0;
+	while ((!nvram_get_int("ntp_ready")) && (i++ < 10)) {
+		sleep(i*i);
+	}
 
 	vpnlog(VPN_LOG_INFO,"VPN GUI client backend starting...");
 
@@ -377,7 +374,7 @@ void start_vpnclient(int clientNum)
 	}
 
 	fprintf(fp, "status-version 2\n");
-	fprintf(fp, "status status 10\n");
+	fprintf(fp, "status status 5\n");
 	fprintf(fp, "\n# Custom Configuration\n");
 	sprintf(&buffer[0], "vpn_client%d_custom", clientNum);
 	fprintf(fp, "%s", nvram_safe_get(&buffer[0]));
@@ -675,12 +672,9 @@ void start_vpnserver(int serverNum)
 		return;
 	}
 
-	for ( i = 1; i < 4; i++ ) {
-		if (!nvram_get_int("ntp_ready")) {
-			sleep(i*i);
-		} else {
-			i = 4;
-		}
+	i = 0;
+	while ((!nvram_get_int("ntp_ready")) && (i++ < 10)) {
+		sleep(i*i);
 	}
 
 	vpnlog(VPN_LOG_INFO,"VPN GUI server backend starting...");
@@ -1151,7 +1145,7 @@ void start_vpnserver(int serverNum)
 	}
 
 	fprintf(fp, "status-version 2\n");
-	fprintf(fp, "status status 10\n");
+	fprintf(fp, "status status 5\n");
 	fprintf(fp, "\n# Custom Configuration\n");
 	sprintf(&buffer[0], "vpn_server%d_custom", serverNum);
 	fprintf(fp, "%s", nvram_safe_get(&buffer[0]));
@@ -1399,7 +1393,7 @@ void start_vpnserver(int serverNum)
 		if (valid == 0)
 		{	// Provide a 2048-bit PEM, from RFC 3526.
 			sprintf(fpath, "/etc/openvpn/server%d/dh.pem", serverNum);
-			eval("cp", "/rom/dh2048.pem", fpath);
+			eval("cp", "/etc/ssl/certs/dh2048.pem", fpath);
 			fp = fopen(fpath, "r");
 			if(fp) {
 				sprintf(&buffer[0], "vpn_crt_server%d_dh", serverNum);
@@ -1664,10 +1658,11 @@ void start_vpn_eas()
 	int nums[MAX_OVPN_CLIENT], i;
 
 	if (strlen(nvram_safe_get("vpn_serverx_start")) == 0 && strlen(nvram_safe_get("vpn_clientx_eas")) == 0) return;
+
 	// wait for time sync for a while
-	i = 10;
-	while (time(0) < 1325376000 && i--) {
-		sleep(1);
+	i = 0;
+	while ((!nvram_get_int("ntp_ready")) && (i++ < 10)) {
+		sleep(i*i);
 	}
 
 	// Parse and start servers
