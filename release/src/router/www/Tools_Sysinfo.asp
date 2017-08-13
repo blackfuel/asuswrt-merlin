@@ -255,7 +255,6 @@ function show_etherstate(){
 	var tableStruct = {
 		data: port_array,
 		container: "tableContainer",
-		title: "Ethernet Ports",
 		header: [
 			{
 				"title" : "Port",
@@ -277,7 +276,6 @@ function show_etherstate(){
 	}
 
 	if(tableStruct.data.length) {
-		$("#tr_ethernet_ports").css("display", "");
 		tableApi.genTableAPI(tableStruct);
 	}
 }
