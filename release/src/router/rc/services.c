@@ -3464,8 +3464,8 @@ start_ntpc(void)
 	if (pids("ntpclient"))
 		killall_tk("ntpclient");
 
-//	if (!pids("ntp"))
-//		_eval(ntp_argv, NULL, 0, &pid);
+	if (!pids("ntp"))
+		_eval(ntp_argv, NULL, 0, &pid);
 
 	return 0;
 }
