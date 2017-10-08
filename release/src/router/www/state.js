@@ -259,14 +259,27 @@ var isSwMode = function(mode){
 	var wlc_psta = '<% nvram_get("wlc_psta"); %>';
 	var wlc_express = '<% nvram_get("wlc_express"); %>';
 
-	if(((sw_mode == '3' || sw_mode == '2') && wlc_psta == '1') || (sw_mode == '3' && wlc_psta == '3')) ui_sw_mode = "mb"; // MediaBridge
-	else if(sw_mode == '2' && wlc_express != '0') ui_sw_mode = "ew"; // Express Way
-	else if(sw_mode == '2' && wlc_express == '0' && wlc_psta == '0') ui_sw_mode = "re"; // Repeater
-	else if(sw_mode == '3' && (wlc_psta == '0' || wlc_psta == '')) ui_sw_mode = "ap"; // AP
-	else if(sw_mode == '5') ui_sw_mode = 'hs'; // Hotspot
+	if(((sw_mode == '2' && wlc_psta == '0') || (sw_mode == '3' && wlc_psta == '2')) && wlc_express == '0'){	// Repeater
+		ui_sw_mode = "re";
+	} 
+	else if((sw_mode == '3' && wlc_psta == '0') || (sw_mode == '3' && wlc_psta == '')){	// Access Point
+		ui_sw_mode = "ap";
+	}
+	else if((sw_mode == '3' && wlc_psta == '1' && wlc_express == '0') || (sw_mode == '3' && wlc_psta == '3' && wlc_express == '0') || (sw_mode == '2' && wlc_psta == '1' && wlc_express == '0')){	// MediaBridge
+		ui_sw_mode = "mb";
+	}
+	else if(sw_mode == '2' && wlc_psta == '0' && wlc_express == '1'){	// Express Way 2G
+		ui_sw_mode = "ew2";
+	}
+	else if(sw_mode == '2' && wlc_psta == '0' && wlc_express == '2'){	// Express Way 5G
+		ui_sw_mode = "ew5";
+	}
+	else if(sw_mode == '5'){	// Hotspot
+		ui_sw_mode = 'hs'; 
+	}
 	else ui_sw_mode = "rt"; // Router
 
-	return (ui_sw_mode == mode);
+	return (ui_sw_mode.search(mode) !== -1);
 }
 
 var current_url = location.pathname.substring(location.pathname.lastIndexOf('/') + 1) || "index.asp";
@@ -1387,6 +1400,9 @@ function showMenuTree(menuList, menuExclude){
 				else if( bwdpi_support && based_modelid != "RT-AC65U" && (current_url.indexOf("AiProtection_WebProtector") == 0 || current_url.indexOf("ParentalControl") == 0)){
 					tab_code += (j == 5) ? 'tabClicked' : 'tab';	//show 1st tab css as class 'tabClicked'
 				}
+				else if(dualWAN_support && based_modelid != "BRT-AC828" && current_url.indexOf("Advanced_Modem_Content") == 0){
+					tab_code += (j == 0 || j == 3) ? 'tabClicked' : 'tab';	// Show fist tab css as class 'tabClicked'
+				}
 				else{
 					tab_code += (j == clickedItem.tab) ? 'tabClicked' : 'tab';
 				}
@@ -1846,24 +1862,25 @@ function show_top_status(){
 			if(wl_info.band5g_2_support)
 				document.getElementById('elliptic_ssid_5g_2').style.display = "";
 		}
-        }
+	}
 
-  var swpjverno = '<% nvram_get("swpjverno"); %>';
-  var buildno = '<% nvram_get("buildno"); %>';
-  var firmver = '<% nvram_get("firmver"); %>'
-  var extendno = '<% nvram_get("extendno"); %>';
-  if(extendno == "") extendno="0";
+	var swpjverno = '<% nvram_get("swpjverno"); %>';
+	var buildno = '<% nvram_get("buildno"); %>';
+	var firmver = '<% nvram_get("firmver"); %>'
+	var extendno = '<% nvram_get("extendno"); %>';
 
-  if(swpjverno == ''){
+	if(swpjverno == ''){
 		if(swisscom_support)
 			showtext(document.getElementById("firmver"), firmver + "." + buildno + '_' + extendno.split("-g")[0] + '_swisscom' );
-		else
-			showtext(document.getElementById("firmver"), buildno + '_' + extendno.split("-g")[0]);
+                else if ((extendno == "") || (extendno == "0"))
+                        showtext(document.getElementById("firmver"), buildno);
+                else
+                        showtext(document.getElementById("firmver"), buildno + '_' + extendno.split("-g")[0]);
 	}
-  else{
+	else{
 		showtext(document.getElementById("firmver"), swpjverno + '_' + extendno);
-  }
-	
+	}
+
 	// no_op_mode
 	if (!dsl_support) {
 		if(sw_mode == "1")  // Show operation mode in banner, Viz 2011.11
