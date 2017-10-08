@@ -394,6 +394,107 @@ obj-y += iptables
 obj-y += iproute2
 endif
 
+######################################################################
+#
+# Blackfuel addons
+#
+ASUSWRT_DIR="`readlink -f $(TOP)`/../../.."
+BLACKFUEL_ADDON="blackfuel-addon"
+BLACKFUEL_DIR="$(ASUSWRT_DIR)/$(BLACKFUEL_ADDON)"
+
+RTCONFIG_RTLENTROPY=y
+ifeq ($(RTCONFIG_RTLENTROPY),y)
+obj-y += rtl-entropy
+
+LIBS_DL=`$(if $(RTCONFIG_BCMARM),arm-brcm-linux-uclibcgnueabi-gcc -print-file-name=,mipsel-linux-uclibc-cpp -print-file-name=)libdl.a`
+LIBS_PTHREAD=`$(if $(RTCONFIG_BCMARM),arm-brcm-linux-uclibcgnueabi-gcc -print-file-name=,mipsel-linux-uclibc-cpp -print-file-name=)libpthread.a`
+LIBS_M=`$(if $(RTCONFIG_BCMARM),arm-brcm-linux-uclibcgnueabi-gcc -print-file-name=,mipsel-linux-uclibc-cpp -print-file-name=)libm.a`
+LIBS_RT=`$(if $(RTCONFIG_BCMARM),arm-brcm-linux-uclibcgnueabi-gcc -print-file-name=,mipsel-linux-uclibc-cpp -print-file-name=)librt.a`
+LIBS_C=`$(if $(RTCONFIG_BCMARM),arm-brcm-linux-uclibcgnueabi-gcc -print-file-name=,mipsel-linux-uclibc-cpp -print-file-name=)libc.a`
+endif
+
+RTCONFIG_NTP=y
+ifeq ($(RTCONFIG_NTP),y)
+obj-y += ntp
+obj-y += libcap
+obj-y += util-linux
+obj-y += pps-tools
+obj-y += setserial
+endif
+
+RTCONFIG_FINDUTILS=y
+ifeq ($(RTCONFIG_FINDUTILS),y)
+obj-y += findutils
+endif
+
+RTCONFIG_WHOIS=y
+ifeq ($(RTCONFIG_WHOIS),y)
+obj-y += whois
+endif
+
+RTCONFIG_WIPE=y
+ifeq ($(RTCONFIG_WIPE),y)
+obj-y += wipe
+endif
+
+RTCONFIG_DNSCRYPT=y
+ifeq ($(RTCONFIG_DNSCRYPT),y)
+obj-y += dnscrypt
+obj-y += libsodium
+endif
+
+RTCONFIG_HAVEGED=y
+ifeq ($(RTCONFIG_HAVEGED),y)
+obj-y += haveged
+endif
+
+RTCONFIG_DIEHARDER=y
+ifeq ($(RTCONFIG_DIEHARDER),y)
+obj-y += dieharder
+obj-y += gsl
+endif
+
+RTCONFIG_RNGTOOLS=y
+ifeq ($(RTCONFIG_RNGTOOLS),y)
+obj-y += rng-tools
+obj-y += libgcrypt
+obj-y += libgpg-error
+obj-y += argp-standalone
+endif
+
+RTCONFIG_CRYPTSETUP=nettle
+ifeq ($(RTCONFIG_CRYPTSETUP),gcrypt)
+obj-y += cryptsetup-gcrypt
+obj-y += libgcrypt
+obj-y += libgpg-error
+obj-y += lvm2
+obj-y += util-linux
+obj-y += popt
+else
+ifeq ($(RTCONFIG_CRYPTSETUP),openssl)
+obj-y += cryptsetup-openssl
+obj-y += lvm2
+obj-y += util-linux
+obj-y += popt
+else
+ifeq ($(RTCONFIG_CRYPTSETUP),nettle)
+obj-y += cryptsetup-nettle
+obj-y += lvm2
+obj-y += util-linux
+obj-y += popt
+else
+ifeq ($(RTCONFIG_CRYPTSETUP),kernel)
+obj-y += cryptsetup-kernel
+obj-y += lvm2
+obj-y += util-linux
+obj-y += popt
+endif
+endif
+endif
+endif
+
+######################################################################
+
 obj-$(RTCONFIG_BWDPI) += sqlite
 obj-$(RTCONFIG_BWDPI) += bwdpi
 obj-$(RTCONFIG_BWDPI) += bwdpi_sqlite
@@ -807,6 +908,8 @@ ifeq ($(RTCONFIG_TOR),y)
 obj-y += openssl
 obj-y += zlib
 obj-y += libevent-2.0.21
+obj-y += xzutils
+obj-y += zstd
 obj-y += tor
 endif
 
@@ -1107,7 +1210,7 @@ ifneq ($(RTCONFIG_OPTIMIZE_SHARED_LIBS),y)
 endif
 
 	@cd $(TARGETDIR) && $(TOP)/others/rootprep${BCMEX}.sh
-	[ -d $${PWD%%/release*}/../asuswrt-merlin-addon/staging ] && cp -afv $${PWD%%/release*}/../asuswrt-merlin-addon/staging/* $(TARGETDIR)
+	[ ! -d $(BLACKFUEL_DIR)/staging ] || cp -afv $(BLACKFUEL_DIR)/staging/* $(TARGETDIR)
 	@echo ---
 
 ifeq ($(RTCONFIG_QCA),y)
@@ -1350,6 +1453,47 @@ clean-build: dummy
 	rm -rf $(PLATFORMDIR)/extras
 	rm -rf kernel_header
 
+	# Blackfuel packages and updates
+	if [ ! -d "$(BLACKFUEL_DIR)" ]; then \
+		ln -sf ../$(BLACKFUEL_ADDON) "$(BLACKFUEL_DIR)"; \
+	fi; \
+	if [ ! -d "$(BLACKFUEL_DIR)/packages" ]; then \
+		echo "The blackfuel packages directory is missing: $(BLACKFUEL_DIR)/packages"; \
+		false; \
+	else \
+		rm -rf "$(TOP)/xzutils"; \
+		rm -rf "$(TOP)/zstd"; \
+		rm -rf "$(TOP)/tor"; \
+		rm -rf "$(TOP)/nettle"; \
+		rm -rf "$(TOP)/curl"; \
+		rm -rf "$(TOP)/findutils"; \
+		rm -rf "$(TOP)/whois"; \
+		rm -rf "$(TOP)/libsodium"; \
+		rm -rf "$(TOP)/dnscrypt"; \
+		rm -rf "$(TOP)/haveged"; \
+		rm -rf "$(TOP)/wipe"; \
+		rm -rf "$(TOP)/gsl"; \
+		rm -rf "$(TOP)/dieharder"; \
+		rm -rf "$(TOP)/popt"; \
+		rm -rf "$(TOP)/libgpg-error"; \
+		rm -rf "$(TOP)/util-linux"; \
+		rm -rf "$(TOP)/lvm2"; \
+		rm -rf "$(TOP)/libgcrypt"; \
+		rm -rf "$(TOP)/cryptsetup-gcrypt"; \
+		rm -rf "$(TOP)/cryptsetup-openssl"; \
+		rm -rf "$(TOP)/cryptsetup-nettle"; \
+		rm -rf "$(TOP)/cryptsetup-kernel"; \
+		rm -rf "$(TOP)/pps-tools"; \
+		rm -rf "$(TOP)/setserial"; \
+		rm -rf "$(TOP)/ntp"; \
+		rm -rf "$(TOP)/argp-standalone"; \
+		rm -rf "$(TOP)/libcap"; \
+		rm -rf "$(TOP)/rtl-sdr"; \
+		rm -rf "$(TOP)/rtl-entropy"; \
+		rm -rf "$(TOP)/ncurses"; \
+		true; \
+	fi
+
 distclean: clean
 ifneq ($(INSIDE_MAK),1)
 	$(MAKE) -C $(SRCBASE) $@ INSIDE_MAK=1
@@ -1445,20 +1589,6 @@ busybox-clean:
 busybox-config:
 	$(MAKE) -C busybox menuconfig
 
-e2fsprogs/Makefile: e2fsprogs/Makefile.in
-ifeq ($(RTCONFIG_BCMARM),y)
-	cd e2fsprogs && CFLAGS="-Os $(EXTRACFLAGS)" \
-	$(CONFIGURE) --prefix=/usr --sysconfdir=/etc --enable-elf-shlibs ac_cv_lib_pthread_sem_init=no \
-		--disable-tls --disable-rpath --disable-nls \
-		--disable-debugfs --disable-imager --disable-resizer --disable-defrag --disable-uuidd
-else
-	cd e2fsprogs && CFLAGS="-Os $(EXTRACFLAGS)" \
-	$(CONFIGURE) LDFLAGS="$(if $(QCA),-ldl)" \
-		--prefix=/usr --sysconfdir=/etc --enable-elf-shlibs \
-		--disable-tls --disable-rpath --disable-nls \
-		--disable-debugfs --disable-imager --disable-resizer --disable-defrag --disable-uuidd
-endif
-
 6relayd: 6relayd/Makefile
 	@EXT_CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -fPIC" \
 	EXT_LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections" \
@@ -1472,25 +1602,50 @@ endif
 6relayd-clean:
 	-@$(MAKE) -C 6relayd clean
 
-e2fsprogs: e2fsprogs/Makefile
+e2fsprogs: util-linux e2fsprogs/Makefile
 	$(MAKE) -C $@ $(PARALLEL_BUILD)
+
+e2fsprogs/Makefile: e2fsprogs/Makefile.in
+ifeq ($(RTCONFIG_BCMARM),y)
+	cd e2fsprogs && \
+	PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+	CFLAGS="$(CFLAGS) -Os $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include" \
+	CPPFLAGS="$(CPPFLAGS) -Os $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include" \
+	LDFLAGS="$(LDFLAGS) -L$(STAGEDIR)/usr/lib" \
+	LIBS="-luuid -L$(STAGEDIR)/usr/lib" \
+	$(CONFIGURE) --prefix=$(STAGEDIR)/usr --sysconfdir=/etc --enable-elf-shlibs ac_cv_lib_pthread_sem_init=no \
+		--disable-tls --disable-rpath --disable-nls \
+		--disable-debugfs --disable-imager --disable-resizer --disable-defrag --disable-uuidd \
+		--disable-libuuid --disable-libblkid
+else
+	cd e2fsprogs && \
+	PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+	CFLAGS="$(CFLAGS) -Os $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include" \
+	CPPFLAGS="$(CPPFLAGS) -Os $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include" \
+	LDFLAGS="$(LDFLAGS) $(if $(QCA),-ldl) -L$(STAGEDIR)/usr/lib" \
+	LIBS="-luuid -L$(STAGEDIR)/usr/lib" \
+	$(CONFIGURE) --prefix=$(STAGEDIR)/usr --sysconfdir=/etc --enable-elf-shlibs \
+		--disable-tls --disable-rpath --disable-nls \
+		--disable-debugfs --disable-imager --disable-resizer --disable-defrag --disable-uuidd \
+		--disable-libuuid --disable-libblkid
+endif
 
 e2fsprogs-clean:
 	-@$(MAKE) -C e2fsprogs clean
 	@rm -f e2fsprogs/Makefile
 
 e2fsprogs-install:
-	install -D e2fsprogs/lib/libblkid.so.1.0 $(INSTALLDIR)/e2fsprogs/usr/lib/libblkid.so.1.0
+	#install -D e2fsprogs/lib/libblkid.so.1.0 $(INSTALLDIR)/e2fsprogs/usr/lib/libblkid.so.1.0
 	install -D e2fsprogs/lib/libcom_err.so.2.1 $(INSTALLDIR)/e2fsprogs/usr/lib/libcom_err.so.2.1
 	install -D e2fsprogs/lib/libe2p.so.2.3 $(INSTALLDIR)/e2fsprogs/usr/lib/libe2p.so.2.3
 	install -D e2fsprogs/lib/libext2fs.so.2.4 $(INSTALLDIR)/e2fsprogs/usr/lib/libext2fs.so.2.4
-	install -D e2fsprogs/lib/libuuid.so.1.2 $(INSTALLDIR)/e2fsprogs/usr/lib/libuuid.so.1.2
+	#install -D e2fsprogs/lib/libuuid.so.1.2 $(INSTALLDIR)/e2fsprogs/usr/lib/libuuid.so.1.2
 	$(STRIP) $(INSTALLDIR)/e2fsprogs/usr/lib/*.so.*
-	ln -sf libblkid.so.1.0 $(INSTALLDIR)/e2fsprogs/usr/lib/libblkid.so.1
+	#ln -sf libblkid.so.1.0 $(INSTALLDIR)/e2fsprogs/usr/lib/libblkid.so.1
 	ln -sf libcom_err.so.2.1 $(INSTALLDIR)/e2fsprogs/usr/lib/libcom_err.so.2
 	ln -sf libe2p.so.2.3 $(INSTALLDIR)/e2fsprogs/usr/lib/libe2p.so.2
 	ln -sf libext2fs.so.2.4 $(INSTALLDIR)/e2fsprogs/usr/lib/libext2fs.so.2
-	ln -sf libuuid.so.1.2 $(INSTALLDIR)/e2fsprogs/usr/lib/libuuid.so.1
+	#ln -sf libuuid.so.1.2 $(INSTALLDIR)/e2fsprogs/usr/lib/libuuid.so.1
 	install -D e2fsprogs/e2fsck/e2fsck $(INSTALLDIR)/e2fsprogs/usr/sbin/e2fsck
 	install -D e2fsprogs/misc/mke2fs $(INSTALLDIR)/e2fsprogs/usr/sbin/mke2fs
 	install -D e2fsprogs/misc/tune2fs $(INSTALLDIR)/e2fsprogs/usr/sbin/tune2fs
@@ -1826,22 +1981,29 @@ dnsmasq:  $(if $(RTCONFIG_DNSSEC),nettle,)
 		$(if $(RTCONFIG_IPV6),-DUSE_IPV6,-DNO_IPV6) \
 		$(if $(RTCONFIG_USB_EXTRAS)||$(RTCONFIG_TR069),,-DNO_SCRIPT) \
 		$(if $(RTCONFIG_USB_EXTRAS),,-DNO_TFTP) \
-		$(if $(RTCONFIG_DNSSEC),-I$(TOP)/nettle/include -I$(TOP)/gmp -DHAVE_DNSSEC -DHAVE_DNSSEC_STATIC,)" \
+		$(if $(RTCONFIG_DNSSEC),-I$(STAGEDIR)/usr/include -I$(TOP)/gmp -DHAVE_DNSSEC -DHAVE_DNSSEC_STATIC,)" \
 	CFLAGS="-Os -ffunction-sections -fdata-sections $(EXTRACFLAGS)" \
 	LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections \
-		$(if $(RTCONFIG_DNSSEC),-L$(TOP)/nettle/lib -L$(TOP)/gmp/.libs,)" \
-	$(if $(RTCONFIG_DNSSEC),PKG_CONFIG_PATH="$(TOP)/nettle/lib/pkgconfig",)
+		$(if $(RTCONFIG_DNSSEC),-L$(STAGEDIR)/usr/lib -L$(TOP)/gmp/.libs,)" \
+	$(if $(RTCONFIG_DNSSEC),PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig",)
 
 dnsmasq-install:
 	install -D dnsmasq/src/dnsmasq $(INSTALLDIR)/dnsmasq/usr/sbin/dnsmasq
 	$(STRIP) $(INSTALLDIR)/dnsmasq/usr/sbin/dnsmasq
 
-nettle/stamp-h1:
+nettle/stamp-h1: nettle-unpack
 	@cd nettle && \
-	CPPFLAGS="-I$(TOP)/gmp" \
-	CFLAGS="-O2 -Wall $(EXTRACFLAGS) -fPIC -ffunction-sections -fdata-sections" \
-	LDFLAGS="-L$(TOP)/gmp/.libs -ffunction-sections -fdata-sections -Wl,--gc-sections -fPIC" \
-	$(CONFIGURE) prefix=$(TOP)/nettle --enable-mini-gmp --disable-documentation --disable-shared
+	PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+	CFLAGS="$(CFLAGS) $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include -I$(STAGEDIR)/usr/include/nettle -I$(TOP)/gmp" \
+	CXXFLAGS="$(CXXFLAGS) $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include -I$(STAGEDIR)/usr/include/nettle -I$(TOP)/gmp" \
+	CPPFLAGS="$(CPPFLAGS) $(EXTRACFLAGS) -I$(STAGEDIR)/usr/include -I$(STAGEDIR)/usr/include/nettle -I$(TOP)/gmp" \
+	LDFLAGS="$(LDFLAGS) -L$(STAGEDIR)/usr/lib -L$(TOP)/gmp/.libs" \
+	$(CONFIGURE) \
+	--prefix="$(STAGEDIR)/usr" \
+	--enable-shared \
+	--enable-static \
+	--enable-mini-gmp \
+	--disable-documentation
 	@touch nettle/stamp-h1
 
 nettle: nettle/stamp-h1
@@ -2005,14 +2167,14 @@ else
 	cd miniupnpd && ./genconfig.sh --vendorcfg --leasefile --portinuse
 endif
 
-miniupnpd: $(IPTABLES) e2fsprogs miniupnpd/config.h
+miniupnpd: $(IPTABLES) util-linux miniupnpd/config.h
 	@$(SEP)
 	cp -f ./shared/version.h miniupnpd$(MUVER)/.
 	PKG_CONFIG=false ARCH=$(PLATFORM) \
 	$(MAKE) -C $@ -f Makefile.merlin $(PARALLEL_BUILD) \
 	    IPTABLESPATH=$(TOP)/$(IPTABLES) \
-	    EXTRACFLAGS="-Os $(EXTRACFLAGS) -idirafter$(KERNEL_HEADER_DIR) -ffunction-sections -fdata-sections -I$(TOP)/e2fsprogs/lib" \
-	    LDFLAGS="$(EXTRALDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(IPTC_LIBDIR) -L$(TOP)/e2fsprogs/lib" \
+	    EXTRACFLAGS="-Os $(EXTRACFLAGS) -idirafter$(KERNEL_HEADER_DIR) -ffunction-sections -fdata-sections -I$(STAGEDIR)/usr/include" \
+	    LDFLAGS="$(EXTRALDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(IPTC_LIBDIR) -L$(STAGEDIR)/usr/lib" \
 	    LDLIBS="-Wl,--as-needed $(IPTC_LIBS) -luuid"
 
 miniupnpd-clean:
@@ -2167,7 +2329,8 @@ libusb10/stamp-h1:
 	touch $@
 
 libusb10: libusb10/stamp-h1
-	$(MAKE) -C $@
+	$(MAKE) -C $@ && \
+	DESTDIR="$(STAGEDIR)" $(MAKE) -C $@ install
 
 libusb10-install: libusb10
 	install -D libusb10/libusb/.libs/libusb-1.0.so.0.0.0 $(INSTALLDIR)/libusb10/usr/lib/libusb-1.0.so.0
@@ -2297,44 +2460,44 @@ mtd-utils-install:
 mtd-utils-clean:
 	$(MAKE) -C mtd-utils clean
 
-util-linux: util-linux/Makefile
-	$(MAKE) -C $@/libuuid/src && $(MAKE) $@-stage
-
-util-linux/Makefile: util-linux/configure
-	$(MAKE) util-linux-configure
-
-util-linux/configure:
-	( cd util-linux ; ./autogen.sh )
-
-util-linux-configure:
-	( export scanf_cv_alloc_modifier=no; \
-		cd util-linux ; \
-		$(CONFIGURE) \
-		--prefix=/usr \
-		--bindir=/usr/sbin \
-		--libdir=/usr/lib \
-		--enable-libuuid \
-		--disable-nls --disable-tls --disable-libblkid --disable-mount --disable-libmount \
-		--disable-fsck --disable-cramfs --disable-partx --disable-uuidd --disable-mountpoint \
-		--disable-fallocate --disable-unshare --disable-agetty \
-		--disable-cramfs --disable-switch_root --disable-pivot_root \
-		--disable-kill --disable-rename --disable-chsh-only-listed \
-		--disable-schedutils --disable-wall --disable-pg-bell --disable-require-password \
-		--disable-use-tty-group --disable-makeinstall-chown --disable-makeinstall-setuid\
-		--without-ncurses --without-selinux --without-audit \
-	)
-
-util-linux-stage:
-	$(MAKE) -C util-linux/libuuid/src DESTDIR=$(STAGEDIR) \
-		install-usrlib_execLTLIBRARIES install-uuidincHEADERS
-
-util-linux-install: util-linux
-	install -D $(STAGEDIR)/usr/lib/libuuid.so.1 $(INSTALLDIR)/util-linux/usr/lib/libuuid.so.1
-	$(STRIP) $(INSTALLDIR)/util-linux/usr/lib/*.so*
-
-util-linux-clean:
-	[ ! -f util-linux/Makefile ] || $(MAKE) -C util-linux distclean
-	@rm -f util-linux/Makefile
+#util-linux: util-linux/Makefile
+#	$(MAKE) -C $@/libuuid/src && $(MAKE) $@-stage
+#
+#util-linux/Makefile: util-linux/configure
+#	$(MAKE) util-linux-configure
+#
+#util-linux/configure:
+#	( cd util-linux ; ./autogen.sh )
+#
+#util-linux-configure:
+#	( export scanf_cv_alloc_modifier=no; \
+#		cd util-linux ; \
+#		$(CONFIGURE) \
+#		--prefix=/usr \
+#		--bindir=/usr/sbin \
+#		--libdir=/usr/lib \
+#		--enable-libuuid \
+#		--disable-nls --disable-tls --disable-libblkid --disable-mount --disable-libmount \
+#		--disable-fsck --disable-cramfs --disable-partx --disable-uuidd --disable-mountpoint \
+#		--disable-fallocate --disable-unshare --disable-agetty \
+#		--disable-cramfs --disable-switch_root --disable-pivot_root \
+#		--disable-kill --disable-rename --disable-chsh-only-listed \
+#		--disable-schedutils --disable-wall --disable-pg-bell --disable-require-password \
+#		--disable-use-tty-group --disable-makeinstall-chown --disable-makeinstall-setuid\
+#		--without-ncurses --without-selinux --without-audit \
+#	)
+#
+#util-linux-stage:
+#	$(MAKE) -C util-linux/libuuid/src DESTDIR=$(STAGEDIR) \
+#		install-usrlib_execLTLIBRARIES install-uuidincHEADERS
+#
+#util-linux-install: util-linux
+#	install -D $(STAGEDIR)/usr/lib/libuuid.so.1 $(INSTALLDIR)/util-linux/usr/lib/libuuid.so.1
+#	$(STRIP) $(INSTALLDIR)/util-linux/usr/lib/*.so*
+#
+#util-linux-clean:
+#	[ ! -f util-linux/Makefile ] || $(MAKE) -C util-linux distclean
+#	@rm -f util-linux/Makefile
 
 odhcp6c: odhcp6c/Makefile
 	@EXT_CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -fPIC" \
@@ -2827,28 +2990,1403 @@ libevent-2.0.21-clean:
 	[ ! -f libevent-2.0.21/Makefile ] || $(MAKE) -C libevent-2.0.21 clean
 	@rm -f libevent-2.0.21/Makefile
 
-tor: openssl zlib libevent-2.0.21 tor/Makefile
+#######################################################################################
+#
+# Blackfuel addons
+#
+
+### xzutils
+
+xzutils: xzutils/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+xzutils/Makefile: xzutils-unpack xzutils/configure
+	@[ -f $@ ] || $(MAKE) xzutils-configure
+
+xzutils/configure:
+	@[ -f $@ ] || ( cd xzutils ; ./autogen.sh )
+
+xzutils-configure:
+	@[ ! -d xzutils ] || [ -f "$(STAGEDIR)/usr/lib/liblzma.so" ] || ( cd xzutils ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath \
+		--enable-threads=posix \
+		--disable-silent-rules)
+
+xzutils-stage:
+	@echo xzutils
+	@[ ! -d xzutils ] || $(MAKE) -C xzutils $(PARALLEL_BUILD) install
+
+xzutils-clean:
+	[ ! -f xzutils/Makefile ] || $(MAKE) -C xzutils clean
+	@rm -f xzutils/Makefile
+
+xzutils-install:
+	install -d $(INSTALLDIR)/xzutils/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/liblzma.so* $(INSTALLDIR)/xzutils/usr/lib/
+	chmod u+w $(INSTALLDIR)/xzutils/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/xzutils/usr/lib/liblzma.so*
+
+### zstd
+
+zstd: xzutils zstd/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+zstd/Makefile:
+	@[ ! -d zstd ] && $(MAKE) zstd-unpack
+
+zstd-stage:
+	@echo zstd
+	@[ ! -d zstd ] || [ -f "$(STAGEDIR)/usr/lib/libzstd.so" ] || \
+		PREFIX="$(STAGEDIR)/usr" \
+		DESTDIR="" \
+		LIBDIR="$(STAGEDIR)/usr/lib" \
+		INCLUDEDIR="$(STAGEDIR)/usr/include" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(MAKE) -C zstd $(PARALLEL_BUILD) install
+
+zstd-clean:
+	[ ! -f zstd/Makefile ] || $(MAKE) -C zstd clean
+
+zstd-install:
+	install -d $(INSTALLDIR)/zstd/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libzstd.so* $(INSTALLDIR)/zstd/usr/lib/
+	chmod u+w $(INSTALLDIR)/zstd/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/zstd/usr/lib/libzstd.so*
+
+### findutils
+
+findutils: findutils/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+findutils/Makefile: findutils-unpack findutils/configure
+	@[ -f $@ ] || $(MAKE) findutils-configure
+
+findutils/configure:
+	@[ -f $@ ] || ( cd findutils ; ./autogen.sh )
+
+findutils-configure:
+	@[ ! -d findutils ] || [ -f "$(STAGEDIR)/usr/bin/find" ] || ( cd findutils ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-threads=posix \
+		--disable-silent-rules \
+		--disable-rpath)
+
+findutils-stage:
+	@echo findutils
+	@[ ! -d findutils ] || ( \
+		$(MAKE) -C findutils $(PARALLEL_BUILD) && \
+		$(MAKE) -C findutils install )
+
+findutils-clean:
+	[ ! -f findutils/Makefile ] || $(MAKE) -C findutils clean
+	@rm -f findutils/Makefile
+
+findutils-install:
+	install -d $(INSTALLDIR)/findutils/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/find $(INSTALLDIR)/findutils/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/xargs $(INSTALLDIR)/findutils/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/locate $(INSTALLDIR)/findutils/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/updatedb $(INSTALLDIR)/findutils/usr/bin/
+	$(STRIP) $(INSTALLDIR)/findutils/usr/bin/find
+	$(STRIP) $(INSTALLDIR)/findutils/usr/bin/xargs
+	$(STRIP) $(INSTALLDIR)/findutils/usr/bin/locate
+
+### libsodium
+
+libsodium: libsodium/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libsodium/Makefile: libsodium-unpack libsodium/configure
+	@[ -f $@ ] || $(MAKE) libsodium-configure
+
+libsodium/configure:
+	@[ -f $@ ] || ( cd libsodium ; ./autogen.sh )
+
+libsodium-configure:
+	@[ ! -d libsodium ] || [ -f "$(STAGEDIR)/usr/lib/libsodium.so" ] || ( cd libsodium ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--disable-static \
+		--enable-shared \
+		--disable-silent-rules \
+		--enable-opt \
+		--with-pthreads)
+
+libsodium-stage:
+	@echo libsodium
+	@[ ! -d libsodium ] || ( \
+		$(MAKE) -C libsodium $(PARALLEL_BUILD) && \
+		$(MAKE) -C libsodium install )
+
+libsodium-clean:
+	[ ! -f libsodium/Makefile ] || $(MAKE) -C libsodium clean
+	@rm -f libsodium/Makefile
+
+libsodium-install:
+	install -d $(INSTALLDIR)/libsodium/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libsodium.so* $(INSTALLDIR)/libsodium/usr/lib/
+	chmod u+w $(INSTALLDIR)/libsodium/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libsodium/usr/lib/libsodium.so*
+
+### dnscrypt
+
+dnscrypt: libsodium dnscrypt/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+dnscrypt/Makefile: dnscrypt-unpack dnscrypt/configure
+	@[ -f $@ ] || $(MAKE) dnscrypt-configure
+
+dnscrypt/configure:
+	@[ -f $@ ] || ( cd dnscrypt ; ./autogen.sh )
+
+dnscrypt-configure:
+	@[ ! -d dnscrypt ] || [ -f "$(STAGEDIR)/usr/sbin/dnscrypt-proxy" ] || ( cd dnscrypt ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--disable-static \
+		--enable-shared \
+		--disable-silent-rules)
+
+dnscrypt-stage:
+	@echo dnscrypt
+	@[ ! -d dnscrypt ] || ( \
+		$(MAKE) -C dnscrypt $(PARALLEL_BUILD) && \
+		$(MAKE) -C dnscrypt install )
+
+dnscrypt-clean:
+	[ ! -f dnscrypt/Makefile ] || $(MAKE) -C dnscrypt clean
+	@rm -f dnscrypt/Makefile
+
+dnscrypt-install:
+	install -d $(INSTALLDIR)/dnscrypt/usr/bin/
+	install -d $(INSTALLDIR)/dnscrypt/usr/share/dnscrypt-proxy/
+	install -D $(STAGEDIR)/usr/sbin/dnscrypt-proxy $(INSTALLDIR)/dnscrypt/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/hostip $(INSTALLDIR)/dnscrypt/usr/bin/
+	install -D $(STAGEDIR)/usr/share/dnscrypt-proxy/dnscrypt-resolvers.csv $(INSTALLDIR)/dnscrypt/usr/share/dnscrypt-proxy/
+	$(STRIP) $(INSTALLDIR)/dnscrypt/usr/bin/dnscrypt-proxy
+	$(STRIP) $(INSTALLDIR)/dnscrypt/usr/bin/hostip
+
+### wipe
+
+wipe: wipe/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+wipe/Makefile: wipe-unpack wipe/configure
+	@[ -f $@ ] || $(MAKE) wipe-configure
+
+wipe/configure:
+	@[ -f $@ ] || ( cd wipe ; ./autogen.sh )
+
+wipe-configure:
+	@[ ! -d wipe ] || [ -f "$(STAGEDIR)/usr/bin/wipe" ] || ( cd wipe ; \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--host=arm-linux \
+		--build=x86_64-linux \
+		--prefix=$(STAGEDIR)/usr \
+		--mandir=$(STAGEDIR)/usr/share/man \
+		--enable-static \
+		--enable-shared)
+
+wipe-stage:
+	@echo wipe
+	@[ ! -d wipe ] || ( cd wipe ; \
+		$(MAKE) $(PARALLEL_BUILD) ; \
+		install -d $(STAGEDIR)/usr/bin ; \
+		install -D wipe $(STAGEDIR)/usr/bin/ ; \
+		$(STRIP) $(STAGEDIR)/usr/bin/wipe ; \
+		install -d $(STAGEDIR)/usr/share/man/man1 ; \
+		install wipe.1 $(STAGEDIR)/usr/share/man/man1/ ; \
+		rm -rf $(STAGEDIR)/usr/share/doc/wipe* ; \
+		install -d $(STAGEDIR)/usr/share/doc/wipe ; \
+		for file in LICENSE copyright CHANGES README TODO INSTALL TESTING; do \
+			install $$file $(STAGEDIR)/usr/share/doc/wipe/; \
+		done )
+
+wipe-clean:
+	[ ! -f wipe/Makefile ] || $(MAKE) -C wipe clean
+	@rm -f wipe/Makefile
+
+wipe-install:
+	install -d $(INSTALLDIR)/wipe/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/wipe $(INSTALLDIR)/wipe/usr/bin/
+	$(STRIP) $(INSTALLDIR)/wipe/usr/bin/wipe
+
+### haveged
+
+haveged: haveged/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+haveged/Makefile: haveged-unpack haveged/configure
+	@[ -f $@ ] || $(MAKE) haveged-configure
+
+haveged/configure:
+	@[ -f $@ ] || ( cd haveged ; ./autogen.sh )
+
+haveged-configure:
+	@[ ! -d haveged ] || [ -f "$(STAGEDIR)/usr/sbin/haveged" ] || ( cd haveged ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-static \
+		--enable-shared \
+		--enable-daemon=yes \
+		--enable-threads=no \
+		--enable-olt=no)
+
+haveged-stage:
+	@echo haveged
+	@[ ! -d haveged ] || ( \
+		$(MAKE) -C haveged $(PARALLEL_BUILD) && \
+		$(MAKE) -C haveged install )
+
+haveged-clean:
+	[ ! -f haveged/Makefile ] || $(MAKE) -C haveged clean
+	@rm -f haveged/Makefile
+
+haveged-install:
+	install -d $(INSTALLDIR)/haveged/usr/bin/
+	install -d $(INSTALLDIR)/haveged/usr/lib/
+	install -D $(STAGEDIR)/usr/sbin/haveged $(INSTALLDIR)/haveged/usr/bin/
+	cp -df $(STAGEDIR)/usr/lib/libhavege.so* $(INSTALLDIR)/haveged/usr/lib/
+	chmod u+w $(INSTALLDIR)/haveged/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/haveged/usr/bin/haveged
+	$(STRIP) $(INSTALLDIR)/haveged/usr/lib/libhavege.so*
+
+### gsl
+
+gsl: gsl/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+gsl/Makefile: gsl-unpack gsl/configure
+	@[ -f $@ ] || $(MAKE) gsl-configure
+
+gsl/configure:
+	@[ -f $@ ] || ( cd gsl ; ./autogen.sh )
+
+gsl-configure:
+	@[ ! -d gsl ] || [ -f "$(STAGEDIR)/usr/lib/libgsl.so" ] || ( cd gsl ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-static \
+		--enable-shared \
+		--disable-silent-rules)
+
+gsl-stage:
+	@echo gsl
+	@[ ! -d gsl ] || ( \
+		$(MAKE) -C gsl $(PARALLEL_BUILD) && \
+		$(MAKE) -C gsl install )
+
+gsl-clean:
+	[ ! -f gsl/Makefile ] || $(MAKE) -C gsl clean
+	@rm -f gsl/Makefile
+
+gsl-install:
+	install -d $(INSTALLDIR)/gsl/usr/bin/
+	install -d $(INSTALLDIR)/gsl/usr/lib/
+	install -D $(STAGEDIR)/usr/bin/gsl-randist $(INSTALLDIR)/gsl/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/gsl-histogram $(INSTALLDIR)/gsl/usr/bin/
+	cp -df $(STAGEDIR)/usr/lib/libgsl.so* $(INSTALLDIR)/gsl/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libgslcblas.so* $(INSTALLDIR)/gsl/usr/lib/
+	chmod u+w $(INSTALLDIR)/gsl/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/gsl/usr/bin/gsl-randist
+	$(STRIP) $(INSTALLDIR)/gsl/usr/bin/gsl-histogram
+	$(STRIP) $(INSTALLDIR)/gsl/usr/lib/libgsl.so*
+	$(STRIP) $(INSTALLDIR)/gsl/usr/lib/libgslcblas.so*
+
+### dieharder
+
+dieharder: gsl dieharder/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+dieharder/Makefile: dieharder-unpack dieharder/configure
+	$(MAKE) dieharder-configure
+
+dieharder/configure:
+	@[ -f $@ ] || ( cd dieharder ; ./autogen.sh )
+
+dieharder-configure:
+	@[ ! -d dieharder ] || [ -f "$(STAGEDIR)/usr/bin/dieharder" ] || ( cd dieharder ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		ac_cv_c_endian=little \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-static \
+		--enable-shared)
+
+dieharder-stage:
+	@echo dieharder
+	@[ ! -d dieharder ] || $(MAKE) -C dieharder $(PARALLEL_BUILD) install
+
+dieharder-clean:
+	[ ! -f dieharder/Makefile ] || $(MAKE) -C dieharder clean
+	@rm -f dieharder/Makefile
+
+dieharder-install:
+	install -d $(INSTALLDIR)/dieharder/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/dieharder $(INSTALLDIR)/dieharder/usr/bin/
+	$(STRIP) $(INSTALLDIR)/dieharder/usr/bin/dieharder
+
+### whois
+
+whois: whois-unpack
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+whois-stage:
+	@echo whois
+	@[ ! -d whois ] || [ -f "$(STAGEDIR)/usr/bin/whois" ] || ( cd whois ; \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		LIBS="" \
+		BASEDIR="$(STAGEDIR)/usr" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(MAKE) $(PARALLEL_BUILD) ; \
+		install -d $(STAGEDIR)/usr/bin/ ; \
+		install -d $(STAGEDIR)/usr/share/man/man1/ ; \
+		install -d $(STAGEDIR)/usr/share/man/man5/ ; \
+		install whois $(STAGEDIR)/usr/bin/ ; \
+		install whois.1 $(STAGEDIR)/usr/share/man/man1/ ; \
+		install whois.conf.5 $(STAGEDIR)/usr/share/man/man5/)
+
+whois-clean:
+	$(MAKE) -C whois clean
+
+whois-install:
+	install -d $(INSTALLDIR)/whois/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/whois $(INSTALLDIR)/whois/usr/bin/
+	$(STRIP) $(INSTALLDIR)/whois/usr/bin/whois
+
+### argp-standalone
+
+argp-standalone: argp-standalone/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+argp-standalone/Makefile: argp-standalone-unpack argp-standalone/configure
+	@[ -f $@ ] || $(MAKE) argp-standalone-configure
+
+argp-standalone/configure:
+	@[ -f $@ ] || ( cd argp-standalone ; autoreconf )
+
+argp-standalone-configure:
+	@[ ! -d argp-standalone ] || [ -f "$(STAGEDIR)/usr/lib/libargp.a" ] || ( cd argp-standalone ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" )
+
+argp-standalone-stage:
+	@echo argp-standalone
+	@[ ! -d argp-standalone ] || ( cd argp-standalone ; \
+		$(MAKE) $(PARALLEL_BUILD) ; \
+		install -d $(STAGEDIR)/usr/lib/ ; \
+		install -D libargp.a $(STAGEDIR)/usr/lib/ ; \
+		install -d $(STAGEDIR)/usr/include/ ; \
+		install -D argp.h $(STAGEDIR)/usr/include/ ; \
+		install -D argp-fmtstream.h $(STAGEDIR)/usr/include/ ; \
+		install -D argp-namefrob.h $(STAGEDIR)/usr/include/ )
+
+argp-standalone-clean:
+	[ ! -f argp-standalone/Makefile ] || $(MAKE) -C argp-standalone clean
+	@rm -f argp-standalone/Makefile
+
+argp-standalone-install:
+	@echo "argp-standalone is static library, nothing to install"
+
+### libgpg-error
+
+libgpg-error: libgpg-error/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libgpg-error/Makefile: libgpg-error-unpack libgpg-error/configure
+	@[ -f $@ ] || $(MAKE) libgpg-error-configure
+
+libgpg-error/configure:
+	@[ -f $@ ] || ( cd libgpg-error ; ./autogen.sh )
+
+libgpg-error-configure:
+	@[ ! -d libgpg-error ] || [ -f "$(STAGEDIR)/usr/lib/libgpg-error.so" ] || ( cd libgpg-error ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath)
+
+libgpg-error-stage:
+	@echo libgpg-error
+	@[ ! -d libgpg-error ] || ( \
+		$(MAKE) -C libgpg-error $(PARALLEL_BUILD) && \
+		$(MAKE) -C libgpg-error install )
+
+libgpg-error-clean:
+	[ ! -f libgpg-error/Makefile ] || $(MAKE) -C libgpg-error clean
+	@rm -f libgpg-error/Makefile
+
+libgpg-error-install:
+	install -d $(INSTALLDIR)/libgpg-error/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libgpg-error.so* $(INSTALLDIR)/libgpg-error/usr/lib/
+	chmod u+w $(INSTALLDIR)/libgpg-error/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libgpg-error/usr/lib/libgpg-error.so*
+
+### libgcrypt
+
+libgcrypt: libgpg-error libgcrypt/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libgcrypt/Makefile: libgcrypt-unpack libgcrypt/configure
+	@[ -f $@ ] || $(MAKE) libgcrypt-configure
+
+libgcrypt/configure:
+	@[ -f $@ ] || ( cd libgcrypt ; ./autogen.sh )
+
+libgcrypt-configure:
+	@[ ! -d libgcrypt ] || [ -f "$(STAGEDIR)/usr/lib/libgcrypt.so" ] || ( cd libgcrypt ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-amd64-as-feature-detection \
+		--with-gpg-error-prefix="$(STAGEDIR)/usr" )
+
+libgcrypt-stage:
+	@echo libgcrypt
+	@[ ! -d libgcrypt ] || ( \
+		$(MAKE) -C libgcrypt $(PARALLEL_BUILD) && \
+		$(MAKE) -C libgcrypt install )
+
+libgcrypt-clean:
+	[ ! -f libgcrypt/Makefile ] || $(MAKE) -C libgcrypt clean
+	@rm -f libgcrypt/Makefile
+
+libgcrypt-install:
+	install -d $(INSTALLDIR)/libgcrypt/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libgcrypt.so* $(INSTALLDIR)/libgcrypt/usr/lib/
+	chmod u+w $(INSTALLDIR)/libgcrypt/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libgcrypt/usr/lib/libgcrypt.so*
+
+### rng-tools
+
+rng-tools: argp-standalone libgpg-error libgcrypt rng-tools/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+rng-tools/Makefile: rng-tools-unpack rng-tools/configure
+	@[ -f $@ ] || $(MAKE) rng-tools-configure
+
+rng-tools/configure:
+	@[ -f $@ ] || ( cd rng-tools ; ./autogen.sh )
+
+rng-tools-configure:
+	@[ ! -d rng-tools ] || [ -f "$(STAGEDIR)/usr/bin/rngtest" ] || ( cd rng-tools ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-largp" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--disable-silent-rules )
+
+rng-tools-stage:
+	@echo rng-tools
+	@[ ! -d rng-tools ] || ( \
+		$(MAKE) -C rng-tools $(PARALLEL_BUILD) && \
+		$(MAKE) -C rng-tools install )
+
+rng-tools-clean:
+	[ ! -f rng-tools/Makefile ] || $(MAKE) -C rng-tools clean
+	@rm -f rng-tools/Makefile
+
+rng-tools-install:
+	install -d $(INSTALLDIR)/rng-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/rngtest $(INSTALLDIR)/rng-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/rngd $(INSTALLDIR)/rng-tools/usr/bin/
+	$(STRIP) $(INSTALLDIR)/rng-tools/usr/bin/rngtest
+	$(STRIP) $(INSTALLDIR)/rng-tools/usr/bin/rngd
+
+### popt
+
+popt: popt/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+popt/Makefile: popt-unpack popt/configure
+	@[ -f $@ ] || $(MAKE) popt-configure
+
+popt/configure:
+	@[ -f $@ ] || ( cd popt ; ./autogen.sh )
+
+popt-configure:
+	@[ ! -d popt ] || [ -f "$(STAGEDIR)/usr/lib/libpopt.so" ] || ( cd popt ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath )
+
+popt-stage:
+	@echo popt
+	@[ ! -d popt ] || ( \
+		$(MAKE) -C popt $(PARALLEL_BUILD) && \
+		$(MAKE) -C popt install )
+
+popt-clean:
+	[ ! -f popt/Makefile ] || $(MAKE) -C popt clean
+	@rm -f popt/Makefile
+
+popt-install:
+	install -d $(INSTALLDIR)/popt/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libpopt.so* $(INSTALLDIR)/popt/usr/lib/
+	chmod u+w $(INSTALLDIR)/popt/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/popt/usr/lib/libpopt.so*
+
+### util-linux
+
+util-linux: ncurses libgcrypt util-linux/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+util-linux/Makefile: util-linux-unpack util-linux/configure
+	@[ -f $@ ] || $(MAKE) util-linux-configure
+
+util-linux/configure:
+	@[ -f $@ ] || ( cd util-linux ; ./autogen.sh )
+
+util-linux-configure:
+	@[ ! -d util-linux ] || [ -f "$(STAGEDIR)/usr/lib/libuuid.so" ] || ( \
+		cd util-linux ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fno-data-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -lm" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fno-data-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -lm" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fno-data-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lm $(if $(RTCONFIG_BCMARM),-lncursesw,-lncurses) -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-rpath \
+		--disable-silent-rules \
+		--disable-bash-completion \
+		--disable-makeinstall-chown \
+		--disable-makeinstall-setuid \
+		--disable-agetty \
+		$(if $(RTCONFIG_BCMARM),--with-ncursesw --without-ncurses,--with-ncurses --without-ncursesw) \
+		--enable-libuuid \
+		--enable-libblkid )
+
+util-linux-stage:
+	@echo util-linux
+	@[ ! -d util-linux ] || ( \
+		$(MAKE) -C util-linux $(PARALLEL_BUILD) && \
+		$(MAKE) -C util-linux install )
+
+util-linux-clean:
+	[ ! -f util-linux/Makefile ] || $(MAKE) -C util-linux clean
+	@rm -f util-linux/Makefile
+
+util-linux-install:
+	install -d $(INSTALLDIR)/util-linux/usr/lib/
+	install -d $(INSTALLDIR)/util-linux/usr/bin/
+	# /usr/lib
+	cp -df $(STAGEDIR)/usr/lib/libuuid.so* $(INSTALLDIR)/util-linux/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libblkid.so* $(INSTALLDIR)/util-linux/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libsmartcols.so* $(INSTALLDIR)/util-linux/usr/lib/
+	chmod u+w $(INSTALLDIR)/util-linux/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/lib/libuuid.so*
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/lib/libblkid.so*
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/lib/libsmartcols.so*
+	# /usr/bin
+	install -D $(STAGEDIR)/usr/bin/fallocate $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/hexdump $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/cal $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/whereis $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/rename $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/ldattach $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/losetup $(INSTALLDIR)/util-linux/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/hwclock $(INSTALLDIR)/util-linux/usr/bin/
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/fallocate
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/hexdump
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/cal
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/whereis
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/rename
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/ldattach
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/losetup
+	$(STRIP) $(INSTALLDIR)/util-linux/usr/bin/hwclock
+
+### lvm2
+
+lvm2: lvm2/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+lvm2/Makefile: lvm2-unpack lvm2/configure
+	@[ -f $@ ] || $(MAKE) lvm2-configure
+
+lvm2/configure:
+	@[ -f $@ ] || ( cd lvm2 ; ./autogen.sh )
+
+lvm2-configure:
+	@[ ! -d lvm2 ] || [ -f "$(STAGEDIR)/usr/lib/libdevmapper.so" ] || ( cd lvm2 ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		BLKID_CFLAGS="$(BLKID_CFLAGS) -I$(STAGEDIR)/usr/include/blkid -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L../libdm/ioctl -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lpthread -luuid -lm -L../libdm/ioctl -L$(STAGEDIR)/usr/lib" \
+		BLKID_LIBS="-lblkid -L$(STAGEDIR)/usr/lib" \
+		ac_cv_func_malloc_0_nonnull=yes ac_cv_func_realloc_0_nonnull=yes \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--with-confdir=$(STAGEDIR)/usr/etc \
+		--with-default-system-dir=$(STAGEDIR)/usr/etc/lvm \
+		--enable-static_link \
+		--disable-nls \
+		--enable-pkgconfig ; \
+		mkdir -p $(STAGEDIR)/usr/lib/pkgconfig; \
+		cp -pf "libdm/libdevmapper.pc" $(STAGEDIR)/usr/lib/pkgconfig; \
+		DIR=$$PWD; \
+		cd $(STAGEDIR)/usr/lib/pkgconfig; \
+		ln -sf libdevmapper.pc devmapper.pc; \
+		cd $$DIR )
+
+lvm2-stage:
+	@echo lvm2
+	@[ ! -d lvm2 ] || ( \
+		$(MAKE) -C lvm2 $(PARALLEL_BUILD) && \
+		$(MAKE) -C lvm2 install )
+
+lvm2-clean:
+	[ ! -f lvm2/Makefile ] || $(MAKE) -C lvm2 clean
+	@rm -f lvm2/Makefile
+
+lvm2-install:
+	install -d $(INSTALLDIR)/lvm2/usr/lib/
+	install -d $(INSTALLDIR)/lvm2/usr/bin/
+	install -d $(INSTALLDIR)/lvm2/usr/sbin/
+	cp -df $(STAGEDIR)/usr/lib/libdevmapper.so* $(INSTALLDIR)/lvm2/usr/lib/
+	chmod u+w $(INSTALLDIR)/lvm2/usr/lib/*
+	install -D $(STAGEDIR)/usr/sbin/dmsetup $(INSTALLDIR)/lvm2/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/lvm $(INSTALLDIR)/lvm2/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/lvmconf $(INSTALLDIR)/lvm2/usr/sbin/
+	install -D $(STAGEDIR)/usr/sbin/lvmdump $(INSTALLDIR)/lvm2/usr/sbin/
+	for FILE in $(STAGEDIR)/usr/sbin/*; do \
+		if [ -h "$$FILE" ] && [ "`readlink $$FILE`" = "lvm" ]; then \
+			cp -df "$$FILE" "$(INSTALLDIR)/lvm2/usr/bin/"; \
+		fi; \
+	done
+	$(STRIP) $(INSTALLDIR)/lvm2/usr/bin/dmsetup
+	$(STRIP) $(INSTALLDIR)/lvm2/usr/bin/lvm
+	$(STRIP) $(INSTALLDIR)/lvm2/usr/lib/libdevmapper.so*
+
+### cryptsetup-gcrypt
+
+cryptsetup-gcrypt: popt util-linux lvm2 libgpg-error libgcrypt cryptsetup-gcrypt/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+cryptsetup-gcrypt/Makefile: cryptsetup-gcrypt-unpack cryptsetup-gcrypt/configure
+	@[ -f $@ ] || $(MAKE) cryptsetup-gcrypt-configure
+
+cryptsetup-gcrypt/configure:
+	@[ -f $@ ] || ( cd cryptsetup-gcrypt ; autoreconf )
+
+cryptsetup-gcrypt-configure:
+	@[ ! -d cryptsetup-gcrypt ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-gcrypt ; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
+		if [ -f "$$IF_ALG_H" ]; then \
+		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
+		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
+		fi; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lpthread -lgpg-error -luuid -lblkid -ldl -lgcrypt -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath \
+		--enable-cryptsetup-reencrypt \
+		--with-crypto_backend=gcrypt \
+		--enable-static-cryptsetup \
+		--with-libgcrypt-prefix=$(STAGEDIR)/usr )
+
+cryptsetup-gcrypt-stage:
+	@echo cryptsetup-gcrypt
+	@[ ! -d cryptsetup-gcrypt ] || ( \
+		$(MAKE) -C cryptsetup-gcrypt $(PARALLEL_BUILD) && \
+		$(MAKE) -C cryptsetup-gcrypt install )
+
+cryptsetup-gcrypt-clean:
+	[ ! -f cryptsetup-gcrypt/Makefile ] || $(MAKE) -C cryptsetup-gcrypt clean
+	@rm -f cryptsetup-gcrypt/Makefile
+
+cryptsetup-gcrypt-install:
+	install -d $(INSTALLDIR)/cryptsetup-gcrypt/usr/lib/
+	install -d $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/
+	cp -df $(STAGEDIR)/usr/lib/libcryptsetup.so* $(INSTALLDIR)/cryptsetup-gcrypt/usr/lib/
+	chmod u+w $(INSTALLDIR)/cryptsetup-gcrypt/usr/lib/*
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup-reencrypt $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/veritysetup $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/
+	$(STRIP) $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/cryptsetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/cryptsetup-reencrypt
+	$(STRIP) $(INSTALLDIR)/cryptsetup-gcrypt/usr/bin/veritysetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-gcrypt/usr/lib/libcryptsetup.so*
+
+### cryptsetup-openssl
+
+cryptsetup-openssl: popt util-linux lvm2 openssl cryptsetup-openssl/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+cryptsetup-openssl/Makefile: cryptsetup-openssl-unpack cryptsetup-openssl/configure
+	@[ -f $@ ] || $(MAKE) cryptsetup-openssl-configure
+
+cryptsetup-openssl/configure:
+	@[ -f $@ ] || ( cd cryptsetup-openssl ; autoreconf )
+
+cryptsetup-openssl-configure:
+	@[ ! -d cryptsetup-openssl ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-openssl ; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
+		if [ -f "$$IF_ALG_H" ]; then \
+		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
+		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
+		fi; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lpthread -lssl -lcrypto -lz -luuid -lblkid -ldl -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath \
+		--enable-cryptsetup-reencrypt \
+		--with-crypto_backend=openssl \
+		--enable-static-cryptsetup )
+
+cryptsetup-openssl-stage:
+	@echo cryptsetup-openssl
+	@[ ! -d cryptsetup-openssl ] || ( \
+		$(MAKE) -C cryptsetup-openssl $(PARALLEL_BUILD) && \
+		$(MAKE) -C cryptsetup-openssl install )
+
+cryptsetup-openssl-clean:
+	[ ! -f cryptsetup-openssl/Makefile ] || $(MAKE) -C cryptsetup-openssl clean
+	@rm -f cryptsetup-openssl/Makefile
+
+cryptsetup-openssl-install:
+	install -d $(INSTALLDIR)/cryptsetup-openssl/usr/lib/
+	install -d $(INSTALLDIR)/cryptsetup-openssl/usr/bin/
+	cp -df $(STAGEDIR)/usr/lib/libcryptsetup.so* $(INSTALLDIR)/cryptsetup-openssl/usr/lib/
+	chmod u+w $(INSTALLDIR)/cryptsetup-openssl/usr/lib/*
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup $(INSTALLDIR)/cryptsetup-openssl/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup-reencrypt $(INSTALLDIR)/cryptsetup-openssl/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/veritysetup $(INSTALLDIR)/cryptsetup-openssl/usr/bin/
+	$(STRIP) $(INSTALLDIR)/cryptsetup-openssl/usr/bin/cryptsetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-openssl/usr/bin/cryptsetup-reencrypt
+	$(STRIP) $(INSTALLDIR)/cryptsetup-openssl/usr/bin/veritysetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-openssl/usr/lib/libcryptsetup.so*
+
+### cryptsetup-nettle
+
+cryptsetup-nettle: popt util-linux lvm2 nettle cryptsetup-nettle/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+cryptsetup-nettle/Makefile: cryptsetup-nettle-unpack cryptsetup-nettle/configure
+	@[ -f $@ ] || $(MAKE) cryptsetup-nettle-configure
+
+cryptsetup-nettle/configure:
+	@[ -f $@ ] || ( cd cryptsetup-nettle ; autoreconf )
+
+cryptsetup-nettle-configure:
+	@[ ! -d cryptsetup-nettle ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-nettle ; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
+		if [ -f "$$IF_ALG_H" ]; then \
+		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
+		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
+		fi; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lpthread -luuid -lblkid -ldl -lnettle -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath \
+		--enable-cryptsetup-reencrypt \
+		--with-crypto_backend=nettle \
+		--enable-static-cryptsetup )
+
+cryptsetup-nettle-stage:
+	@echo cryptsetup-nettle
+	@[ ! -d cryptsetup-nettle ] || ( \
+		$(MAKE) -C cryptsetup-nettle $(PARALLEL_BUILD) && \
+		$(MAKE) -C cryptsetup-nettle install )
+
+cryptsetup-nettle-clean:
+	[ ! -f cryptsetup-nettle/Makefile ] || $(MAKE) -C cryptsetup-nettle clean
+	@rm -f cryptsetup-nettle/Makefile
+
+cryptsetup-nettle-install:
+	install -d $(INSTALLDIR)/cryptsetup-nettle/usr/lib/
+	install -d $(INSTALLDIR)/cryptsetup-nettle/usr/bin/
+	cp -df $(STAGEDIR)/usr/lib/libcryptsetup.so* $(INSTALLDIR)/cryptsetup-nettle/usr/lib/
+	chmod u+w $(INSTALLDIR)/cryptsetup-nettle/usr/lib/*
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup $(INSTALLDIR)/cryptsetup-nettle/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup-reencrypt $(INSTALLDIR)/cryptsetup-nettle/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/veritysetup $(INSTALLDIR)/cryptsetup-nettle/usr/bin/
+	$(STRIP) $(INSTALLDIR)/cryptsetup-nettle/usr/bin/cryptsetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-nettle/usr/bin/cryptsetup-reencrypt
+	$(STRIP) $(INSTALLDIR)/cryptsetup-nettle/usr/bin/veritysetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-nettle/usr/lib/libcryptsetup.so*
+
+### cryptsetup-kernel
+
+cryptsetup-kernel: popt util-linux lvm2 cryptsetup-kernel/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+cryptsetup-kernel/Makefile: cryptsetup-kernel-unpack cryptsetup-kernel/configure
+	@[ -f $@ ] || $(MAKE) cryptsetup-kernel-configure
+
+cryptsetup-kernel/configure:
+	@[ -f $@ ] || ( cd cryptsetup-kernel ; autoreconf )
+
+cryptsetup-kernel-configure:
+	@[ ! -d cryptsetup-kernel ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-kernel ; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
+		if [ -f "$$IF_ALG_H" ]; then \
+		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
+		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
+		fi; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lpthread -luuid -lblkid -ldl -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-nls \
+		--disable-rpath \
+		--enable-cryptsetup-reencrypt \
+		--with-crypto_backend=kernel \
+		--enable-static-cryptsetup )
+
+cryptsetup-kernel-stage:
+	@echo cryptsetup-kernel
+	@[ ! -d cryptsetup-kernel ] || ( \
+		$(MAKE) -C cryptsetup-kernel $(PARALLEL_BUILD) && \
+		$(MAKE) -C cryptsetup-kernel install )
+
+cryptsetup-kernel-clean:
+	[ ! -f cryptsetup-kernel/Makefile ] || $(MAKE) -C cryptsetup-kernel clean
+	@rm -f cryptsetup-kernel/Makefile
+
+cryptsetup-kernel-install:
+	install -d $(INSTALLDIR)/cryptsetup-kernel/usr/lib/
+	install -d $(INSTALLDIR)/cryptsetup-kernel/usr/bin/
+	cp -df $(STAGEDIR)/usr/lib/libcryptsetup.so* $(INSTALLDIR)/cryptsetup-kernel/usr/lib/
+	chmod u+w $(INSTALLDIR)/cryptsetup-kernel/usr/lib/*
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup $(INSTALLDIR)/cryptsetup-kernel/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/cryptsetup-reencrypt $(INSTALLDIR)/cryptsetup-kernel/usr/bin/
+	install -D $(STAGEDIR)/usr/sbin/veritysetup $(INSTALLDIR)/cryptsetup-kernel/usr/bin/
+	$(STRIP) $(INSTALLDIR)/cryptsetup-kernel/usr/bin/cryptsetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-kernel/usr/bin/cryptsetup-reencrypt
+	$(STRIP) $(INSTALLDIR)/cryptsetup-kernel/usr/bin/veritysetup
+	$(STRIP) $(INSTALLDIR)/cryptsetup-kernel/usr/lib/libcryptsetup.so*
+
+### pps-tools
+
+pps-tools: pps-tools-unpack
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+pps-tools-stage:
+	@echo pps-tools
+	@[ ! -d pps-tools ] || [ -f "$(STAGEDIR)/usr/bin/ppsctl" ] || ( cd pps-tools ; \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		CFLAGS="$(CFLAGS) -DN_PPS=18 -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		DESTDIR="$(STAGEDIR)" \
+		$(MAKE) install && \
+		[ -f "$(STAGEDIR)/usr/include/timepps.h" ] || \
+		[ ! -f "$(STAGEDIR)/usr/include/sys/timepps.h" ] || \
+		cp -p "$(STAGEDIR)/usr/include/sys/timepps.h" "$(STAGEDIR)/usr/include" )
+
+pps-tools-clean:
+	$(MAKE) -C pps-tools clean
+
+pps-tools-install:
+	install -d $(INSTALLDIR)/pps-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ppsctl $(INSTALLDIR)/pps-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ppsfind $(INSTALLDIR)/pps-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ppstest $(INSTALLDIR)/pps-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ppswatch $(INSTALLDIR)/pps-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ppsldisc $(INSTALLDIR)/pps-tools/usr/bin/
+	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppsctl
+	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppstest
+	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppswatch
+	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppsldisc
+
+### setserial
+
+setserial: setserial/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+setserial/Makefile: setserial-unpack setserial/configure
+	@[ -f $@ ] || $(MAKE) setserial-configure
+
+setserial/configure:
+	@[ -f $@ ] || ( cd setserial ; autoreconf )
+
+setserial-configure:
+	@[ ! -d setserial ] || [ -f "$(STAGEDIR)/usr/bin/setserial" ] || ( cd setserial ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		STRIP="arm-brcm-linux-uclibcgnueabi-strip" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--host=arm-linux \
+		--build=x86_64-linux \
+		--prefix="$(STAGEDIR)/usr" \
+		--mandir="$(STAGEDIR)/usr/share/man" )
+
+setserial-stage:
+	@echo setserial
+	@[ ! -d setserial ] || ( \
+		$(MAKE) -C setserial $(PARALLEL_BUILD) && \
+		mkdir -p "$(STAGEDIR)/temp_setserial/bin" "$(STAGEDIR)/temp_setserial/usr/man/man8" && \
+		DESTDIR="$(STAGEDIR)/temp_setserial" $(MAKE) -C setserial install && \
+		mkdir -p "$(STAGEDIR)/usr/bin" "$(STAGEDIR)/usr/share/man/man8" && \
+		mv "$(STAGEDIR)/temp_setserial/bin/setserial" "$(STAGEDIR)/usr/bin/" && \
+		mv "$(STAGEDIR)/temp_setserial/usr/man/man8/setserial.8" "$(STAGEDIR)/usr/share/man/man8/" && \
+		rm -rf "$(STAGEDIR)/temp_setserial" )
+
+setserial-clean:
+	[ ! -f setserial/Makefile ] || $(MAKE) -C setserial clean
+	@rm -f setserial/Makefile
+
+setserial-install:
+	install -d $(INSTALLDIR)/setserial/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/setserial $(INSTALLDIR)/setserial/usr/bin/
+	$(STRIP) $(INSTALLDIR)/setserial/usr/bin/setserial
+
+### ntp
+
+ntp: pps-tools setserial util-linux openssl libcap ntp/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+ntp/Makefile: ntp-unpack ntp/configure
+	@[ -f $@ ] || $(MAKE) ntp-configure
+
+ntp/configure:
+	@[ -f $@ ] || ( cd ntp ; autoreconf )
+
+ntp-configure:
+	@[ ! -d ntp ] || [ -f "$(STAGEDIR)/usr/bin/ntpd" ] || ( cd ntp ; \
+		if [ ! -f "$(STAGEDIR)/usr/include/timepps.h" ]; then \
+			echo "timepps.h is not installed.  Verify that pps-tools was installed properly."; \
+			false; \
+		else \
+			PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+			CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+			CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+			LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+			ac_cv_header_md5_h=no ac_cv_lib_rt_sched_setscheduler=no ac_cv_header_dns_sd_h=no hw_cv_func_snprintf_c99=yes hw_cv_func_vsnprintf_c99=yes ac_cv_make_ntptime=yes \
+			$(CONFIGURE) \
+			--prefix="$(STAGEDIR)/usr" \
+			--enable-static \
+			--enable-shared \
+			--enable-local-libopts \
+			--enable-local-libevent \
+			--enable-accurate-adjtime \
+			--without-ntpsnmpd \
+			--without-lineeditlibs \
+			--enable-linuxcaps \
+			--with-crypto \
+			--with-openssl-libdir="$(STAGEDIR)/etc/lib" \
+			--with-openssl-incdir="$(STAGEDIR)/etc/include" \
+			--enable-autokey \
+			--enable-openssl-random \
+			--enable-thread-support \
+			--with-threads \
+			--with-yielding-select=yes \
+			--without-rpath \
+			--disable-silent-rules \
+			--disable-all-clocks \
+			--disable-parse-clocks \
+			--enable-NMEA \
+			--enable-ATOM \
+			--enable-LOCAL-CLOCK \
+			--enable-SHM \
+			--enable-WWV \
+			--enable-GPSD; \
+		fi )
+
+ntp-stage:
+	@echo ntp
+	@[ ! -d ntp ] || ( \
+		$(MAKE) -C ntp $(PARALLEL_BUILD) && \
+		$(MAKE) -C ntp install )
+
+ntp-clean:
+	[ ! -f ntp/Makefile ] || $(MAKE) -C ntp clean
+	@rm -f ntp/Makefile
+
+ntp-install:
+	install -d $(INSTALLDIR)/ntp/usr/bin/
+	install -d $(INSTALLDIR)/ntp/usr/sbin/
+	install -D $(STAGEDIR)/usr/bin/ntpd $(INSTALLDIR)/ntp/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ntpdate $(INSTALLDIR)/ntp/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ntpdc $(INSTALLDIR)/ntp/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ntp-keygen $(INSTALLDIR)/ntp/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ntpq $(INSTALLDIR)/ntp/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ntptime $(INSTALLDIR)/ntp/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ntptrace $(INSTALLDIR)/ntp/usr/sbin/
+	install -D $(STAGEDIR)/usr/bin/ntp-wait $(INSTALLDIR)/ntp/usr/sbin/
+	$(STRIP) $(INSTALLDIR)/ntp/usr/bin/ntpd
+	$(STRIP) $(INSTALLDIR)/ntp/usr/bin/ntpdate
+	$(STRIP) $(INSTALLDIR)/ntp/usr/bin/ntpdc
+	$(STRIP) $(INSTALLDIR)/ntp/usr/bin/ntp-keygen
+	$(STRIP) $(INSTALLDIR)/ntp/usr/bin/ntpq
+	$(STRIP) $(INSTALLDIR)/ntp/usr/bin/ntptime
+
+### libcap
+
+libcap: libcap-unpack
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libcap-stage:
+	@echo libcap
+	@[ ! -d libcap ] || [ -f "$(STAGEDIR)/usr/lib/libcap.so" ] || ( cd libcap ; \
+		$(MAKE) install \
+		DESTDIR="$(STAGEDIR)/usr" \
+		prefix="" \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		AR="arm-brcm-linux-uclibcgnueabi-ar" \
+		RANLIB="arm-brcm-linux-uclibcgnueabi-ranlib" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$$PWD/libcap/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(LIBS_DL) $(LIBS_DL) -L$(LIBS_PTHREAD) $(LIBS_PTHREAD) -L$(LIBS_M) $(LIBS_M) -L$(LIBS_RT) $(LIBS_RT) -L$(LIBS_C) $(LIBS_C) -L$(STAGEDIR)/usr/lib" \
+		BUILD_CC="gcc" \
+		BUILD_CFLAGS="-I$$PWD/libcap/include" \
+		INDENT="| true" \
+		PAM_CAP="no" \
+		RAISE_SETFCAP="no" \
+		DYNAMIC="yes" \
+		lib="lib" )
+
+libcap-clean:
+	$(MAKE) -C libcap clean
+
+libcap-install:
+	install -d $(INSTALLDIR)/libcap/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libcap.so* $(INSTALLDIR)/libcap/usr/lib/
+	chmod u+w $(INSTALLDIR)/libcap/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libcap/usr/lib/libcap.so*
+
+### rtl-sdr
+
+rtl-sdr: libusb10 rtl-sdr/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+rtl-sdr/Makefile: rtl-sdr-unpack rtl-sdr/configure
+	@[ -f $@ ] || $(MAKE) rtl-sdr-configure
+
+rtl-sdr/configure:
+	@[ -f $@ ] || ( cd rtl-sdr ; autoreconf -i )
+
+rtl-sdr-configure:
+	@[ ! -d rtl-sdr ] || [ -f "$(STAGEDIR)/usr/lib/librtlsdr.a" ] || ( cd rtl-sdr ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib/libusb-1.0.a $(STAGEDIR)/usr/lib/libusb-1.0.a -L$(LIBS_DL) $(LIBS_DL) -L$(LIBS_PTHREAD) $(LIBS_PTHREAD) -L$(LIBS_M) $(LIBS_M) -L$(LIBS_RT) $(LIBS_RT) -L$(LIBS_C) $(LIBS_C) -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-static \
+		--disable-shared \
+		--disable-silent-rules \
+		--enable-driver-detach )
+
+rtl-sdr-stage:
+	@echo rtl-sdr
+	@[ ! -d rtl-sdr ] || ( \
+		$(MAKE) -C rtl-sdr $(PARALLEL_BUILD) && \
+		$(MAKE) -C rtl-sdr install )
+
+rtl-sdr-clean:
+	[ ! -f rtl-sdr/Makefile ] || $(MAKE) -C rtl-sdr clean
+	@rm -f rtl-sdr/Makefile
+
+rtl-sdr-install:
+	@echo "rtl-sdr is static library, nothing to install"
+
+### rtl-entropy
+
+rtl-entropy: libcap rtl-sdr openssl rtl-entropy/build/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+rtl-entropy/build/Makefile: rtl-entropy-unpack
+	@[ -f $@ ] || ( cd rtl-entropy ; \
+		rm -rf build ; mkdir -p build ; cd build ; \
+		STATIC_LIBS_RTLENTROPY="-L$(STAGEDIR)/usr/lib/libcap.a $(STAGEDIR)/usr/lib/libcap.a -L$(STAGEDIR)/usr/lib/librtlsdr.a $(STAGEDIR)/usr/lib/librtlsdr.a -L$(STAGEDIR)/usr/lib/libusb-1.0.a $(STAGEDIR)/usr/lib/libusb-1.0.a  -L$(STAGEDIR)/etc/lib/libssl.a $(STAGEDIR)/etc/lib/libssl.a  -L$(STAGEDIR)/etc/lib/libcrypto.a $(STAGEDIR)/etc/lib/libcrypto.a -L$(LIBS_DL) $(LIBS_DL) -L$(LIBS_PTHREAD) $(LIBS_PTHREAD) -L$(LIBS_M) $(LIBS_M) -L$(LIBS_RT) $(LIBS_RT) -L$(LIBS_C) $(LIBS_C) -L$(STAGEDIR)/usr/lib -L$(STAGEDIR)/etc/lib"; \
+		ARM_COMPILER_FLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99"; \
+		ARM_LINKER_FLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections $$STATIC_LIBS_RTLENTROPY"; \
+		ARM_LINK_EXECUTABLE="arm-brcm-linux-uclibcgnueabi-gcc  -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -O3 -DNDEBUG  -ffunction-sections -fdata-sections -Wl,--gc-sections CMakeFiles/rtlentropylib.dir/fips.c.o CMakeFiles/rtlentropylib.dir/log.c.o CMakeFiles/rtlentropylib.dir/util.c.o CMakeFiles/rtl_entropy.dir/rtl_entropy.c.o  -o rtl_entropy -rdynamic $$STATIC_LIBS_RTLENTROPY"; \
+		cmake \
+		-DCMAKE_SYSTEM_NAME="Linux" \
+		-DCMAKE_SYSTEM_VERSION="2.6.36.4brcmarm" \
+		-DCMAKE_SYSTEM_VERSION="arm" \
+		-DCMAKE_FIND_ROOT_PATH="$(STAGEDIR)/usr" \
+		-DCMAKE_INSTALL_PREFIX="$(STAGEDIR)/usr" \
+		-DCMAKE_PREFIX_PATH="$(STAGEDIR)/usr" \
+		-DOPENSSL_LIBRARIES="$(STAGEDIR)/etc/lib" \
+		-DOPENSSL_INCLUDE_DIRS="$(STAGEDIR)/etc/include" \
+		-DCMAKE_C_COMPILER="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-gcc" \
+		-DCMAKE_CXX_COMPILER="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-g++" \
+		-DCMAKE_AR="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-ar" \
+		-DCMAKE_RANLIB="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-ranlib" \
+		-DCMAKE_STRIP="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-strip" \
+		-DCMAKE_C_FLAGS="$$ARM_COMPILER_FLAGS" \
+		-DCMAKE_SHARED_LINKER_FLAGS="$$ARM_LINKER_FLAGS" \
+		-DCMAKE_EXE_LINKER_FLAGS="$$ARM_LINKER_FLAGS" \
+		-DCMAKE_C_LINK_EXECUTABLE="$$ARM_LINK_EXECUTABLE" \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+		-DCMAKE_VERBOSE_MAKEFILE=TRUE \
+		../ )
+
+rtl-entropy-stage:
+	@echo rtl-entropy
+	@[ ! -f rtl-entropy/build/Makefile ] || [ -f "$(STAGEDIR)/usr/bin/rtl_entropy" ] || ( \
+		$(MAKE) -C rtl-entropy/build $(PARALLEL_BUILD) && \
+		$(MAKE) -C rtl-entropy/build install )
+
+rtl-entropy-clean:
+	[ ! -f rtl-entropy/build/Makefile ] || $(MAKE) -C rtl-entropy/build clean
+	@rm -rf rtl-entropy/build
+
+rtl-entropy-install:
+	install -d $(INSTALLDIR)/rtl-entropy/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/rtl_entropy $(INSTALLDIR)/rtl-entropy/usr/bin/
+	$(STRIP) $(INSTALLDIR)/rtl-entropy/usr/bin/rtl_entropy
+
+
+### package download and patches
+
+%-unpack:
+	PACKAGE_DIR="$*"; \
+	if [ ! -d "$$PACKAGE_DIR" ]; then \
+		PACKAGE_NAME="$$PACKAGE_DIR"; \
+		if [ "$$PACKAGE_DIR" = "xzutils" ]; then \
+			URL="https://tukaani.org/xz/xz-5.2.3.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "zstd" ]; then \
+			URL="https://github.com/facebook/zstd/archive/v1.3.1.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "tor" ]; then \
+			URL="https://www.torproject.org/dist/tor-0.3.1.7.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "nettle" ]; then \
+			URL="https://ftp.gnu.org/gnu/nettle/nettle-3.3.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "curl" ]; then \
+			URL="https://github.com/curl/curl/releases/download/curl-7_56_0/curl-7.56.0.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "findutils" ]; then \
+			URL="https://ftp.gnu.org/pub/gnu/findutils/findutils-4.6.0.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "whois" ]; then \
+			URL="http://ftp.debian.org/debian/pool/main/w/whois/whois_5.2.18.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "libsodium" ]; then \
+			URL="https://download.libsodium.org/libsodium/releases/libsodium-1.0.15.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "dnscrypt" ]; then \
+			URL="https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-1.9.5.tar.bz2"; \
+		elif [ "$$PACKAGE_DIR" = "haveged" ]; then \
+			URL="http://www.issihosts.com/haveged/haveged-1.9.1.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "wipe" ]; then \
+			URL="https://downloads.sourceforge.net/project/wipe/wipe/2.3.1/wipe-2.3.1.tar.bz2"; \
+		elif [ "$$PACKAGE_DIR" = "gsl" ]; then \
+			URL="https://ftp.heanet.ie/mirrors/gnu/gsl/gsl-2.4.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "dieharder" ]; then \
+			URL="http://www.phy.duke.edu/~rgb/General/dieharder/dieharder-3.31.1.tgz"; \
+		elif [ "$$PACKAGE_DIR" = "popt" ]; then \
+			URL="http://rpm5.org/files/popt/popt-1.16.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "libgpg-error" ]; then \
+			URL="https://gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.27.tar.bz2"; \
+		elif [ "$$PACKAGE_DIR" = "util-linux" ]; then \
+			URL="https://www.kernel.org/pub/linux/utils/util-linux/v2.30/util-linux-2.30.2.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "lvm2" ]; then \
+			URL="https://mirrors.kernel.org/sourceware/lvm2/LVM2.2.02.175.tgz"; \
+		elif [ "$$PACKAGE_DIR" = "libgcrypt" ]; then \
+			URL="https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.8.1.tar.bz2"; \
+		elif [ "$$PACKAGE_DIR" = "cryptsetup-gcrypt" ] || \
+			[ "$$PACKAGE_DIR" = "cryptsetup-openssl" ] || \
+			[ "$$PACKAGE_DIR" = "cryptsetup-nettle" ] || \
+			[ "$$PACKAGE_DIR" = "cryptsetup-kernel" ]; then \
+			URL="https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz"; \
+			PACKAGE_NAME="cryptsetup"; \
+		elif [ "$$PACKAGE_DIR" = "pps-tools" ]; then \
+			URL="https://github.com/redlab-i/pps-tools/archive/v1.0.1.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "setserial" ]; then \
+			URL="https://downloads.sourceforge.net/project/setserial/setserial/2.17/setserial-2.17.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "ntp" ]; then \
+			URL="https://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-4.2/ntp-4.2.8p10.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "argp-standalone" ]; then \
+			URL="https://www.lysator.liu.se/~nisse/misc/argp-standalone-1.3.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "rng-tools" ]; then \
+			URL="https://downloads.sourceforge.net/project/gkernel/rng-tools/5/rng-tools-5.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "libcap" ]; then \
+			URL="https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "rtl-sdr" ]; then \
+			URL="git://git.osmocom.org/rtl-sdr.git"; \
+		elif [ "$$PACKAGE_DIR" = "rtl-entropy" ]; then \
+			URL="https://github.com/pwarren/rtl-entropy/archive/142df23630ea6216c17e00dada85d1cd245bc22f.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "ncurses" ]; then \
+			URL="https://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz"; \
+		else \
+			URL="/$$PACKAGE_DIR-MISSING-URL"; \
+		fi; \
+		DL_DIR="$(BLACKFUEL_DIR)/downloads/$$PACKAGE_NAME"; \
+		PATCH_DIR="$(BLACKFUEL_DIR)/packages/$$PACKAGE_NAME/patches"; \
+		DL_FILE="$${URL##*/}"; \
+		DL_PATH="$$DL_DIR/$$DL_FILE"; \
+		if [ "$${DL_FILE%.git*}" != "$$DL_FILE" ]; then \
+			DL_NAME="$${DL_FILE%.*}"; \
+			DL_FILE="$${DL_NAME}.tar.gz"; \
+			DL_PATH="$$DL_DIR/$$DL_FILE"; \
+			if [ ! -f "$$DL_PATH" ]; then \
+				git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
+				while [ $$? -ne 0 ]; do \
+					sleep 10; \
+					git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
+				done; \
+				tar czvf $$DL_PATH -C $$DL_DIR/temp $$DL_NAME; \
+			fi; \
+		fi; \
+		if [ ! -f "$$DL_PATH" ]; then \
+			wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" $$URL; \
+			while [ $$? -ne 0 ]; do \
+				sleep 10; \
+				wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" $$URL; \
+			done; \
+			rm -rf "$$PACKAGE_DIR" || true; \
+		fi; \
+		rm -rf "$$DL_DIR/temp"; \
+		mkdir -p "$$DL_DIR/temp"; \
+		if [ "$${DL_FILE%.tar.gz*}" != "$$DL_FILE" ] || [ "$${DL_FILE%.tgz*}" != "$$DL_FILE" ]; then \
+			tar xzvf "$$DL_PATH" -C "$$DL_DIR/temp"; \
+		elif [ "$${DL_FILE%.tar.bz2*}" != "$$DL_FILE" ]; then \
+			tar xjvf "$$DL_PATH" -C "$$DL_DIR/temp"; \
+		elif [ "$${DL_FILE%.tar.xz*}" != "$$DL_FILE" ]; then \
+			tar xvJf "$$DL_PATH" -C "$$DL_DIR/temp"; \
+		fi; \
+		mv -f "$$DL_DIR/temp/"* "$$PACKAGE_DIR"; \
+		rm -rf "$$DL_DIR/temp"; \
+		for PATCH_FILE in $$PATCH_DIR/*.patch; do \
+			if [ -f "$$PATCH_FILE" ]; then \
+				echo "Applying patch: $$PATCH_FILE"; \
+				patch --dry-run --silent -p1 -d "$$PACKAGE_DIR/" -i "$$PATCH_FILE" >/dev/null 2>&1 && \
+					patch -p1 -d "$$PACKAGE_DIR/" -i "$$PATCH_FILE" || \
+					  	echo "The patch was not applied."; \
+			else \
+				true; \
+			fi; \
+		done; \
+	else \
+		echo "$$PACKAGE_DIR was not unpacked because the directory exists."; \
+		true; \
+	fi
+
+#######################################################################################
+
+tor: openssl zlib libevent-2.0.21 zstd tor/Makefile
 	@$(SEP)
 	$(MAKE) -C $@ $(PARALLEL_BUILD)
 
-tor/Makefile:
-	(cd tor ; $(CONFIGURE) --enable-static-libevent --with-libevent-dir=$(STAGEDIR)/usr \
+tor/Makefile: tor-unpack
+	(cd tor ; PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+	          CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+	          CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+	          LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+                  $(CONFIGURE) --enable-static-libevent --with-libevent-dir=$(STAGEDIR)/usr \
 					--with-openssl-dir=$(TOP)/openssl \
 					--with-zlib-dir=$(TOP)/zlib \
 					--disable-asciidoc --disable-unittests \
-					--disable-tool-name-check)
+					--disable-tool-name-check \
+					--enable-lzma --enable-zstd)
 
 tor-install:
 	install -D tor/src/or/tor $(INSTALLDIR)/tor/usr/sbin/Tor
 	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor
-	install -D tor/src/tools/tor-checkkey $(INSTALLDIR)/tor/usr/sbin/Tor-checkkey
-	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor-checkkey
 	install -D tor/src/tools/tor-gencert $(INSTALLDIR)/tor/usr/sbin/Tor-gencert
 	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor-gencert
 	install -D tor/src/tools/tor-resolve $(INSTALLDIR)/tor/usr/sbin/Tor-resolve
 	$(STRIP) $(INSTALLDIR)/tor/usr/sbin/Tor-resolve
-	install -Dpv tor/src/config/geoip $(TARGETDIR)/rom/tor/geoip
-	install -Dpv tor/src/config/geoip6 $(TARGETDIR)/rom/tor/geoip6
+	install -Dpv tor/src/config/geoip $(INSTALLDIR)/tor/rom/tor/geoip
+	install -Dpv tor/src/config/geoip6 $(INSTALLDIR)/tor/rom/tor/geoip6
 
 tor-clean:
 	[ ! -f tor/Makefile ] || $(MAKE) -C tor clean
@@ -3985,7 +5523,7 @@ fb_wifi-clean:
 curl: curl/Makefile
 	@$(MAKE) -C $@ $(PARALLEL_BUILD) && $(MAKE) $@-stage
 
-curl/Makefile: curl/configure
+curl/Makefile: curl-unpack curl/configure
 	@cd curl && $(CONFIGURE) CC=$(CC) \
 		CFLAGS="-Os -Wall -ffunction-sections -fdata-sections" \
 		--prefix=/usr --bindir=/usr/sbin --libdir=/usr/lib \
@@ -3999,9 +5537,10 @@ curl/Makefile: curl/configure
 
 curl-install:
 	@$(SEP)
-	install -D curl/lib/.libs/libcurl.so.4.4.0 $(INSTALLDIR)/curl/usr/lib/libcurl.so.4.4.0
-	$(STRIP) $(INSTALLDIR)/curl/usr/lib/libcurl.so.4.4.0
-	cd $(INSTALLDIR)/curl/usr/lib && ln -sf libcurl.so.4.4.0 libcurl.so && ln -sf libcurl.so.4.4.0 libcurl.so.4
+	install -d $(INSTALLDIR)/curl/usr/lib/
+	cp -df curl/lib/.libs/libcurl.so* $(INSTALLDIR)/curl/usr/lib/
+	chmod u+w $(INSTALLDIR)/curl/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/curl/usr/lib/libcurl.so*
 #ifeq ($(RTCONFIG_SPEEDTEST),y)
 	# for speedtest
 	install -D curl/src/.libs/curl $(INSTALLDIR)/curl/usr/sbin/curl
@@ -4417,21 +5956,29 @@ ipset-install:
 	$(STRIP) $(INSTALLDIR)/ipset/usr/sbin/ipset
 
 ncurses/Makefile:
-	cd ncurses && CFLAGS="$(EXTRACFLAGS) -Os -I$(STAGEDIR)/usr/include -ffunction-sections -fdata-sections -fPIC" \
-	$(CONFIGURE) --prefix=/usr --without-cxx --without-cxx-binding \
-	LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
-	--enable-echo --enable-const --enable-overwrite --disable-rpath --without-ada \
+	cd ncurses && \
+	PKG_CONFIG_PATH="/usr/lib/pkgconfig" \
+	CFLAGS="$(CFLAGS) $(EXTRACFLAGS) -Os -I$(STAGEDIR)/usr/include" \
+	CXXFLAGS="$(CXXFLAGS) $(EXTRACFLAGS) -Os -I$(STAGEDIR)/usr/include" \
+	CPPFLAGS="$(CPPFLAGS) $(EXTRACFLAGS) -Os -I$(STAGEDIR)/usr/include" \
+	LDFLAGS="$(LDFLAGS) -L$(STAGEDIR)/usr/lib" \
+	$(CONFIGURE) \
+	--prefix=/usr \
+	--enable-echo --enable-const --disable-overwrite --disable-rpath --without-ada \
 	$(if $(RTCONFIG_BCMARM),--enable-widec,) \
-	--without-debug --without-manpages --without-profile --without-progs --without-tests \
+	--without-debug --without-manpages --without-profile --without-tests \
 	--disable-home-terminfo --with-normal --with-shared --with-build-cppflags=-D_GNU_SOURCE \
-	--enable-pc-files \
-	--disable-termcap --disable-database --with-fallbacks="xterm,vt100,vt200,linux,ansi,xterm-256color"
+	--enable-pc-files --with-pkg-config="/usr/lib/pkgconfig" \
+	--enable-termcap --with-fallbacks="xterm,vt100,vt200,linux,ansi,xterm-256color" \
+	--with-default-terminfo-dir=/usr/share/terminfo --with-terminfo-dirs=/usr/share/terminfo \
+	--with-install-prefix="$(STAGEDIR)" --with-pkg-config-libdir="/usr/lib/pkgconfig"
 
-#	--with-default-terminfo-dir=/usr/share/terminfo --with-terminfo-dirs=/usr/share/terminfo
-
-ncurses: ncurses/Makefile
+ncurses: ncurses-unpack ncurses/Makefile
 	@$(SEP)
-	cd ncurses && $(MAKE) -C ncurses && $(MAKE) -C misc pc-files
+#	cd ncurses && $(MAKE) -C ncurses && $(MAKE) -C misc pc-files && $(MAKE) install DESTDIR="$(STAGEDIR)"
+	cd ncurses && \
+	$(MAKE) DESTDIR="$(STAGEDIR)" && \
+	$(MAKE) install DESTDIR="$(STAGEDIR)"
 
 ncurses-clean:
 	-@$(MAKE) -C ncurses distclean
