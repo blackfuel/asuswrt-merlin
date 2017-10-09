@@ -2000,7 +2000,7 @@ nettle/stamp-h1: nettle-unpack
 	LDFLAGS="$(LDFLAGS) -L$(STAGEDIR)/usr/lib -L$(TOP)/gmp/.libs" \
 	$(CONFIGURE) \
 	--prefix="$(STAGEDIR)/usr" \
-	--enable-shared \
+	--disable-shared \
 	--enable-static \
 	--enable-mini-gmp \
 	--disable-documentation
@@ -3366,6 +3366,10 @@ dieharder-install:
 	install -d $(INSTALLDIR)/dieharder/usr/bin/
 	install -D $(STAGEDIR)/usr/bin/dieharder $(INSTALLDIR)/dieharder/usr/bin/
 	$(STRIP) $(INSTALLDIR)/dieharder/usr/bin/dieharder
+	install -d $(INSTALLDIR)/dieharder/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libdieharder.so* $(INSTALLDIR)/dieharder/usr/lib/
+	chmod u+w $(INSTALLDIR)/dieharder/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/dieharder/usr/lib/libdieharder.so*
 
 ### whois
 
@@ -3390,7 +3394,7 @@ whois-stage:
 		install whois.conf.5 $(STAGEDIR)/usr/share/man/man5/)
 
 whois-clean:
-	$(MAKE) -C whois clean
+	-@$(MAKE) -C whois clean
 
 whois-install:
 	install -d $(INSTALLDIR)/whois/usr/bin/
@@ -3697,10 +3701,7 @@ lvm2-configure:
 		--enable-pkgconfig ; \
 		mkdir -p $(STAGEDIR)/usr/lib/pkgconfig; \
 		cp -pf "libdm/libdevmapper.pc" $(STAGEDIR)/usr/lib/pkgconfig; \
-		DIR=$$PWD; \
-		cd $(STAGEDIR)/usr/lib/pkgconfig; \
-		ln -sf libdevmapper.pc devmapper.pc; \
-		cd $$DIR )
+		ln -sf libdevmapper.pc $(STAGEDIR)/usr/lib/pkgconfig/devmapper.pc )
 
 lvm2-stage:
 	@echo lvm2
@@ -3978,7 +3979,7 @@ pps-tools-stage:
 		cp -p "$(STAGEDIR)/usr/include/sys/timepps.h" "$(STAGEDIR)/usr/include" )
 
 pps-tools-clean:
-	$(MAKE) -C pps-tools clean
+	-@$(MAKE) -C pps-tools clean
 
 pps-tools-install:
 	install -d $(INSTALLDIR)/pps-tools/usr/bin/
@@ -4141,7 +4142,7 @@ libcap-stage:
 		lib="lib" )
 
 libcap-clean:
-	$(MAKE) -C libcap clean
+	-@$(MAKE) -C libcap clean
 
 libcap-install:
 	install -d $(INSTALLDIR)/libcap/usr/lib/
