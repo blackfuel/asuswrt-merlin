@@ -6004,7 +6004,7 @@ endif
 nano/Makefile:
 	cd nano && \
 	autoreconf -i -f && $(CONFIGURE) --prefix=$(INSTALLDIR)/nano/usr \
-		CFLAGS="$(EXTRACFLAGS) -Os -I$(TOP)/ncurses/include -ffunction-sections -fdata-sections" \
+		CFLAGS="$(EXTRACFLAGS) -Os -I$(TOP)/ncurses/include -I$(STAGEDIR)/usr/include -ffunction-sections -fdata-sections" \
 		LDFLAGS="$(LDFLAGS) -L$(TOP)/ncurses/lib -ffunction-sections -fdata-sections -Wl,--gc-sections" \
 		PKG_CONFIG_LIBDIR="$(TOP)/ncurses/misc" PKG_CONFIG_PATH="$(TOP)/ncurses/misc" \
 		$(if $(RTCONFIG_BCMARM),ac_cv_lib_ncursesw_get_wch=yes,ac_cv_lib_ncursesw_get_wch=no) \
