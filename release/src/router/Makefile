@@ -402,6 +402,16 @@ ASUSWRT_DIR="`readlink -f $(TOP)`/../../.."
 BLACKFUEL_ADDON="blackfuel-addon"
 BLACKFUEL_DIR="$(ASUSWRT_DIR)/$(BLACKFUEL_ADDON)"
 
+RTCONFIG_TRANSMISSION=openssl
+ifeq ($(RTCONFIG_TRANSMISSION),openssl)
+obj-y += transmission-openssl
+else
+ifeq ($(RTCONFIG_TRANSMISSION),mbedtls)
+obj-y += transmission-mbedtls
+obj-y += mbedtls
+endif
+endif
+
 RTCONFIG_RTLENTROPY=y
 ifeq ($(RTCONFIG_RTLENTROPY),y)
 obj-y += rtl-entropy
@@ -1491,6 +1501,9 @@ clean-build: dummy
 		rm -rf "$(TOP)/rtl-sdr"; \
 		rm -rf "$(TOP)/rtl-entropy"; \
 		rm -rf "$(TOP)/ncurses"; \
+		rm -rf "$(TOP)/transmission-openssl"; \
+		rm -rf "$(TOP)/transmission-mbedtls"; \
+		rm -rf "$(TOP)/mbedtls"; \
 		true; \
 	fi
 
@@ -1707,10 +1720,16 @@ www-install:
 	@$(MAKE) -C www install INSTALLDIR=$(INSTALLDIR)/www TOMATO_EXPERIMENTAL=$(TOMATO_EXPERIMENTAL)
 
 ifeq ($(RTCONFIG_OPENVPN),y)
+ifneq ($(RTCONFIG_TRANSMISSION),openssl)
 OPENSSL_CIPHERS:=enable-rc5 no-rc4
 else
+OPENSSL_CIPHERS:=enable-rc5
+endif
+else
+ifneq ($(RTCONFIG_TRANSMISSION),openssl)
 #OPENSSL_CIPHERS:=no-dh no-idea no-rc2 no-rc5 no-aes no-aes192 no-cast no-des no-modes no-tls1 no-tlsext
 OPENSSL_CIPHERS:=no-rc4
+endif
 endif
 
 #OPENSSL_CIPHERS:=enable-aes enable-tls1 enable-tlsext
@@ -3206,7 +3225,7 @@ wipe-configure:
 		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
 		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -I$(STAGEDIR)/usr/include" \
 		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		$(CONFIGURE) \
@@ -3685,7 +3704,7 @@ lvm2-configure:
 	@[ ! -d lvm2 ] || [ -f "$(STAGEDIR)/usr/lib/libdevmapper.so" ] || ( cd lvm2 ; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
 		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -I$(STAGEDIR)/usr/include" \
 		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
 		BLKID_CFLAGS="$(BLKID_CFLAGS) -I$(STAGEDIR)/usr/include/blkid -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L../libdm/ioctl -L$(STAGEDIR)/usr/lib" \
@@ -3983,11 +4002,12 @@ pps-tools-clean:
 
 pps-tools-install:
 	install -d $(INSTALLDIR)/pps-tools/usr/bin/
+	install -d $(INSTALLDIR)/pps-tools/usr/sbin/
 	install -D $(STAGEDIR)/usr/bin/ppsctl $(INSTALLDIR)/pps-tools/usr/bin/
-	install -D $(STAGEDIR)/usr/bin/ppsfind $(INSTALLDIR)/pps-tools/usr/bin/
 	install -D $(STAGEDIR)/usr/bin/ppstest $(INSTALLDIR)/pps-tools/usr/bin/
 	install -D $(STAGEDIR)/usr/bin/ppswatch $(INSTALLDIR)/pps-tools/usr/bin/
 	install -D $(STAGEDIR)/usr/bin/ppsldisc $(INSTALLDIR)/pps-tools/usr/bin/
+	install -D $(STAGEDIR)/usr/bin/ppsfind $(INSTALLDIR)/pps-tools/usr/sbin/
 	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppsctl
 	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppstest
 	$(STRIP) $(INSTALLDIR)/pps-tools/usr/bin/ppswatch
@@ -4165,7 +4185,7 @@ rtl-sdr-configure:
 	@[ ! -d rtl-sdr ] || [ -f "$(STAGEDIR)/usr/lib/librtlsdr.a" ] || ( cd rtl-sdr ; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
 		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -I$(STAGEDIR)/usr/include" \
 		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib/libusb-1.0.a $(STAGEDIR)/usr/lib/libusb-1.0.a -L$(LIBS_DL) $(LIBS_DL) -L$(LIBS_PTHREAD) $(LIBS_PTHREAD) -L$(LIBS_M) $(LIBS_M) -L$(LIBS_RT) $(LIBS_RT) -L$(LIBS_C) $(LIBS_C) -L$(STAGEDIR)/usr/lib" \
 		$(CONFIGURE) \
@@ -4240,6 +4260,182 @@ rtl-entropy-install:
 	install -D $(STAGEDIR)/usr/bin/rtl_entropy $(INSTALLDIR)/rtl-entropy/usr/bin/
 	$(STRIP) $(INSTALLDIR)/rtl-entropy/usr/bin/rtl_entropy
 
+### transmission-openssl
+
+transmission-openssl: openssl curl zlib libevent-2.0.21 transmission-openssl/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+transmission-openssl/Makefile: transmission-openssl-unpack
+	@[ -f $@ ] || $(MAKE) transmission-openssl-configure
+
+transmission-openssl-configure:
+	@[ ! -d transmission-openssl ] || [ -f "$(STAGEDIR)/usr/bin/transmission-daemon" ] || ( \
+		cd transmission-openssl ; \
+		./autogen.sh \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig:$(STAGEDIR)/etc/lib/pkgconfig" \
+		DESTDIR="$(STAGEDIR)" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/etc/include -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/etc/include -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/etc/lib -L$(STAGEDIR)/usr/lib" \
+		OPENSSL_CFLAGS="-I$(STAGEDIR)/etc/include" \
+		OPENSSL_LIBS="-L$(STAGEDIR)/etc/lib -lcrypto -lssl" \
+		CRYPTO_CFLAGS="-I$(STAGEDIR)/etc/include" \
+		CRYPTO_LIBS="-L$(STAGEDIR)/etc/lib -lcrypto -lssl" \
+		LIBCURL_CFLAGS="-I$(STAGEDIR)/usr/include" \
+		LIBCURL_LIBS="-L$(STAGEDIR)/usr/lib -lcurl" \
+		LIBEVENT_CFLAGS="-I$(STAGEDIR)/usr/include" \
+		LIBEVENT_LIBS="-L$(STAGEDIR)/usr/lib -levent" \
+		ZLIB_CFLAGS="-I$(STAGEDIR)/usr/include" \
+		ZLIB_LIBS="-L$(STAGEDIR)/usr/lib -lz" \
+		--host=arm-brcm-linux-uclibcgnueabi \
+		--build=x86_64-linux-gnu \
+		--prefix=/usr \
+		--disable-nls \
+		--disable-silent-rules \
+		--enable-daemon \
+		--enable-cli \
+		--without-gtk \
+		--enable-largefile \
+		--enable-lightweight \
+		--with-crypto=openssl \
+		)
+
+transmission-openssl-stage:
+	@echo transmission-openssl
+	@[ ! -d transmission-openssl ] || ( \
+		$(MAKE) -C transmission-openssl $(PARALLEL_BUILD) && \
+		$(MAKE) -C transmission-openssl DESTDIR="$(STAGEDIR)" install )
+
+transmission-openssl-clean:
+	[ ! -f transmission-openssl/Makefile ] || $(MAKE) -C transmission-openssl distclean
+	@rm -f transmission-openssl/Makefile
+
+transmission-openssl-install:
+	install -d $(INSTALLDIR)/transmission-openssl/usr/bin/
+	install -d $(INSTALLDIR)/transmission-openssl/usr/share/
+	install -D $(STAGEDIR)/usr/bin/transmission-daemon $(INSTALLDIR)/transmission-openssl/usr/bin/Transmission-daemon
+	install -D $(STAGEDIR)/usr/bin/transmission-remote $(INSTALLDIR)/transmission-openssl/usr/bin/Transmission-remote
+	#install -D $(STAGEDIR)/usr/bin/transmission-cli $(INSTALLDIR)/transmission-openssl/usr/bin/Transmission-cli
+	#install -D $(STAGEDIR)/usr/bin/transmission-create $(INSTALLDIR)/transmission-openssl/usr/bin/Transmission-create
+	#install -D $(STAGEDIR)/usr/bin/transmission-edit $(INSTALLDIR)/transmission-openssl/usr/bin/Transmission-edit
+	#install -D $(STAGEDIR)/usr/bin/transmission-show $(INSTALLDIR)/transmission-openssl/usr/bin/Transmission-show
+	cp -af $(STAGEDIR)/usr/share/transmission $(INSTALLDIR)/transmission-openssl/usr/share/
+	$(STRIP) $(INSTALLDIR)/transmission-openssl/usr/bin/*
+
+### transmission-mbedtls
+
+transmission-mbedtls: mbedtls curl zlib libevent-2.0.21 transmission-mbedtls/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+transmission-mbedtls/Makefile: transmission-mbedtls-unpack
+	@[ -f $@ ] || $(MAKE) transmission-mbedtls-configure
+
+transmission-mbedtls-configure:
+	@[ ! -d transmission-mbedtls ] || [ -f "$(STAGEDIR)/usr/bin/transmission-daemon" ] || ( \
+		cd transmission-mbedtls ; \
+		./autogen.sh \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		DESTDIR="$(STAGEDIR)" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		MBEDTLS_CFLAGS="-I$(STAGEDIR)/usr/include" \
+		MBEDTLS_LIBS="-L$(STAGEDIR)/usr/lib -lmbedtls" \
+		LIBCURL_CFLAGS="-I$(STAGEDIR)/etc/include -I$(STAGEDIR)/usr/include" \
+		LIBCURL_LIBS="-L$(STAGEDIR)/etc/lib -L$(STAGEDIR)/usr/lib -lcrypto -lssl -lcurl" \
+		LIBEVENT_CFLAGS="-I$(STAGEDIR)/usr/include" \
+		LIBEVENT_LIBS="-L$(STAGEDIR)/usr/lib -levent" \
+		ZLIB_CFLAGS="-I$(STAGEDIR)/usr/include" \
+		ZLIB_LIBS="-L$(STAGEDIR)/usr/lib -lz" \
+		--host=arm-brcm-linux-uclibcgnueabi \
+		--build=x86_64-linux-gnu \
+		--prefix=/usr \
+		--disable-nls \
+		--disable-silent-rules \
+		--enable-daemon \
+		--enable-cli \
+		--without-gtk \
+		--enable-largefile \
+		--enable-lightweight \
+		--with-crypto=polarssl \
+		)
+
+transmission-mbedtls-stage:
+	@echo transmission-mbedtls
+	@[ ! -d transmission-mbedtls ] || ( \
+		$(MAKE) -C transmission-mbedtls $(PARALLEL_BUILD) && \
+		$(MAKE) -C transmission-mbedtls DESTDIR="$(STAGEDIR)" install )
+
+transmission-mbedtls-clean:
+	[ ! -f transmission-mbedtls/Makefile ] || $(MAKE) -C transmission-mbedtls distclean
+	@rm -f transmission-mbedtls/Makefile
+
+transmission-mbedtls-install:
+	install -d $(INSTALLDIR)/transmission-mbedtls/usr/bin/
+	install -d $(INSTALLDIR)/transmission-mbedtls/usr/share/
+	install -D $(STAGEDIR)/usr/bin/transmission-daemon $(INSTALLDIR)/transmission-mbedtls/usr/bin/Transmission-daemon
+	install -D $(STAGEDIR)/usr/bin/transmission-remote $(INSTALLDIR)/transmission-mbedtls/usr/bin/Transmission-remote
+	#install -D $(STAGEDIR)/usr/bin/transmission-cli $(INSTALLDIR)/transmission-mbedtls/usr/bin/Transmission-cli
+	#install -D $(STAGEDIR)/usr/bin/transmission-create $(INSTALLDIR)/transmission-mbedtls/usr/bin/Transmission-create
+	#install -D $(STAGEDIR)/usr/bin/transmission-edit $(INSTALLDIR)/transmission-mbedtls/usr/bin/Transmission-edit
+	#install -D $(STAGEDIR)/usr/bin/transmission-show $(INSTALLDIR)/transmission-mbedtls/usr/bin/Transmission-show
+	cp -af $(STAGEDIR)/usr/share/transmission $(INSTALLDIR)/transmission-mbedtls/usr/share/
+	$(STRIP) $(INSTALLDIR)/transmission-mbedtls/usr/bin/*
+
+### mbedtls
+
+mbedtls: mbedtls/build/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+mbedtls/build/Makefile: mbedtls-unpack
+	@[ -f $@ ] || ( cd mbedtls ; \
+		rm -rf build ; mkdir -p build ; cd build ; \
+		ARM_COMPILER_FLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99"; \
+		ARM_LINKER_FLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections"; \
+		cmake \
+		-DCMAKE_SYSTEM_NAME="Linux" \
+		-DCMAKE_SYSTEM_VERSION="2.6.36.4brcmarm" \
+		-DCMAKE_SYSTEM_VERSION="arm" \
+		-DCMAKE_FIND_ROOT_PATH="$(STAGEDIR)/usr" \
+		-DCMAKE_INSTALL_PREFIX="$(STAGEDIR)/usr" \
+		-DCMAKE_PREFIX_PATH="$(STAGEDIR)/usr" \
+		-DCMAKE_C_COMPILER="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-gcc" \
+		-DCMAKE_CXX_COMPILER="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-g++" \
+		-DCMAKE_AR="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-ar" \
+		-DCMAKE_RANLIB="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-ranlib" \
+		-DCMAKE_STRIP="/opt/brcm-arm/bin/arm-brcm-linux-uclibcgnueabi-strip" \
+		-DCMAKE_C_FLAGS="$$ARM_COMPILER_FLAGS" \
+		-DCMAKE_SHARED_LINKER_FLAGS="$$ARM_LINKER_FLAGS" \
+		-DCMAKE_EXE_LINKER_FLAGS="$$ARM_LINKER_FLAGS" \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+		-DCMAKE_VERBOSE_MAKEFILE=TRUE \
+		-DCMAKE_BUILD_TYPE:String="Release" \
+		-DUSE_SHARED_MBEDTLS_LIBRARY:Bool=ON \
+		-DENABLE_TESTING:Bool=OFF \
+		-DENABLE_PROGRAMS:Bool=OFF \
+		../ )
+
+mbedtls-stage:
+	@echo mbedtls
+	@[ ! -f mbedtls/build/Makefile ] || [ -f "$(STAGEDIR)/usr/lib/libmbedtls.so" ] || ( \
+		$(MAKE) -C mbedtls/build $(PARALLEL_BUILD) && \
+		$(MAKE) -C mbedtls/build install )
+
+mbedtls-clean:
+	[ ! -f mbedtls/build/Makefile ] || $(MAKE) -C mbedtls/build clean
+	@rm -rf mbedtls/build
+
+mbedtls-install:
+	install -d $(INSTALLDIR)/mbedtls/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libmbed*.so* $(INSTALLDIR)/mbedtls/usr/lib/
+	chmod u+w $(INSTALLDIR)/mbedtls/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/mbedtls/usr/lib/libmbed*.so*
+
 
 ### package download and patches
 
@@ -4250,7 +4446,7 @@ rtl-entropy-install:
 		if [ "$$PACKAGE_DIR" = "xzutils" ]; then \
 			URL="https://tukaani.org/xz/xz-5.2.3.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "zstd" ]; then \
-			URL="https://github.com/facebook/zstd/archive/v1.3.1.tar.gz"; \
+			URL="https://github.com/facebook/zstd/archive/v1.3.2.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "tor" ]; then \
 			URL="https://www.torproject.org/dist/tor-0.3.1.7.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "nettle" ]; then \
@@ -4303,10 +4499,19 @@ rtl-entropy-install:
 			URL="https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "rtl-sdr" ]; then \
 			URL="git://git.osmocom.org/rtl-sdr.git"; \
+			VERSION="b04c2f9f035c5aede43d731e5d58e4725d2f8bb4"; \
 		elif [ "$$PACKAGE_DIR" = "rtl-entropy" ]; then \
-			URL="https://github.com/pwarren/rtl-entropy/archive/142df23630ea6216c17e00dada85d1cd245bc22f.tar.gz"; \
+			URL="git://github.com/pwarren/rtl-entropy.git"; \
+			VERSION="142df23630ea6216c17e00dada85d1cd245bc22f"; \
 		elif [ "$$PACKAGE_DIR" = "ncurses" ]; then \
 			URL="https://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "transmission-openssl" ] || \
+			[ "$$PACKAGE_DIR" = "transmission-mbedtls" ]; then \
+			URL="git://github.com/transmission/transmission.git"; \
+			VERSION="35fea28d1a37875ef7480ac061754df617805b19"; \
+			PACKAGE_NAME="transmission"; \
+		elif [ "$$PACKAGE_DIR" = "mbedtls" ]; then \
+			URL="https://tls.mbed.org/download/mbedtls-2.6.0-gpl.tgz"; \
 		else \
 			URL="/$$PACKAGE_DIR-MISSING-URL"; \
 		fi; \
@@ -4315,19 +4520,29 @@ rtl-entropy-install:
 		DL_FILE="$${URL##*/}"; \
 		DL_PATH="$$DL_DIR/$$DL_FILE"; \
 		if [ "$${DL_FILE%.git*}" != "$$DL_FILE" ]; then \
-			DL_NAME="$${DL_FILE%.*}"; \
-			DL_FILE="$${DL_NAME}.tar.gz"; \
+			DL_NAME="$$PACKAGE_NAME"; \
+			[ -z "$$VERSION" ] && VERSION="master"; \
+			DL_FILE="$${DL_NAME}-$${VERSION}.tar.gz"; \
 			DL_PATH="$$DL_DIR/$$DL_FILE"; \
 			if [ ! -f "$$DL_PATH" ]; then \
 				git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
 				while [ $$? -ne 0 ]; do \
-					sleep 10; \
-					git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
+					sleep 10; git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
 				done; \
+				ORIGDIR=$$PWD; \
+				cd $$DL_DIR/temp/$$DL_NAME; \
+				git checkout $$VERSION; \
+				while [ $$? -ne 0 ]; do \
+					sleep 10; git checkout $$VERSION; \
+				done; \
+				git submodule update --init --recursive; \
+				while [ $$? -ne 0 ]; do \
+					sleep 10; git submodule update --init --recursive; \
+				done; \
+				cd $$ORIGDIR; \
 				tar czvf $$DL_PATH -C $$DL_DIR/temp $$DL_NAME; \
 			fi; \
-		fi; \
-		if [ ! -f "$$DL_PATH" ]; then \
+		elif [ ! -f "$$DL_PATH" ]; then \
 			wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" $$URL; \
 			while [ $$? -ne 0 ]; do \
 				sleep 10; \
@@ -5525,16 +5740,26 @@ curl: curl/Makefile
 	@$(MAKE) -C $@ $(PARALLEL_BUILD) && $(MAKE) $@-stage
 
 curl/Makefile: curl-unpack curl/configure
-	@cd curl && $(CONFIGURE) CC=$(CC) \
-		CFLAGS="-Os -Wall -ffunction-sections -fdata-sections" \
-		--prefix=/usr --bindir=/usr/sbin --libdir=/usr/lib \
-		--enable-http --with-ssl=$(TOP)/openssl/ssl \
-		$(if $(RTCONFIG_IPV6),--enable-ipv6) \
-		--disable-gopher --disable-dict --disable-telnet \
-		--disable-proxy --disable-manual --disable-libcurl-option \
-		CPPFLAGS='-I$(TOP)/openssl/include' \
-		LDFLAGS='$(LDFLAGS) -L$(TOP)/openssl' LIBS='-lcrypto -lssl -ldl' \
-		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt
+	@cd curl && \
+	$(CONFIGURE) \
+	CC=$(CC) \
+	CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
+	CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
+	CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
+	LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib -L$(TOP)/openssl" \
+	LIBS="-lcrypto -lssl -ldl" \
+	--prefix=/usr \
+	--bindir=/usr/sbin \
+	--libdir=/usr/lib \
+	--enable-http \
+	--with-ssl=$(TOP)/openssl \
+	$(if $(RTCONFIG_IPV6),--enable-ipv6) \
+	--disable-gopher \
+	--disable-dict \
+	--disable-telnet \
+	--disable-manual \
+	--disable-libcurl-option \
+	--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt
 
 curl-install:
 	@$(SEP)
@@ -6447,29 +6672,29 @@ GeoIP-1.6.2-clean:
 	-@[ ! -f GeoIP-1.6.2/Makefile ] || $(MAKE) -C GeoIP-1.6.2 distclean
 	@rm -f GeoIP-1.6.2/stamp-h1
 
-Transmission-configure:
-	( cd Transmission && ./autogen.sh && \
-		$(CONFIGURE) --prefix=/usr --bindir=/usr/sbin --libdir=/usr/lib \
-			CFLAGS="$(CFLAGS) -I$(STAGEDIR)/usr/include" \
-			LDFLAGS="$(LDFLAGS) -L$(STAGEDIR)/usr/lib" \
-			--disable-nls --disable-gtk \
-	)
-
-Transmission/Makefile:
-	$(MAKE) Transmission-configure
-
-Transmission: curl libevent-2.0.21 Transmission/Makefile
-	@$(SEP)
-	$(MAKE) -C $@
-
-Transmission-install: Transmission
-	install -D $</daemon/transmission-daemon $(INSTALLDIR)/$</usr/sbin/transmission-daemon
-	install -D $</daemon/transmission-remote $(INSTALLDIR)/$</usr/sbin/transmission-remote
-	$(STRIP) $(INSTALLDIR)/$</usr/sbin/*
-
-Transmission-clean:
-	[ ! -f Transmission/Makefile ] || $(MAKE) -C distclean
-	@rm -f Transmission/Makefile
+#Transmission-configure:
+#	( cd Transmission && ./autogen.sh && \
+#		$(CONFIGURE) --prefix=/usr --bindir=/usr/sbin --libdir=/usr/lib \
+#			CFLAGS="$(CFLAGS) -I$(STAGEDIR)/usr/include" \
+#			LDFLAGS="$(LDFLAGS) -L$(STAGEDIR)/usr/lib" \
+#			--disable-nls --disable-gtk \
+#	)
+#
+#Transmission/Makefile:
+#	$(MAKE) Transmission-configure
+#
+#Transmission: curl libevent-2.0.21 Transmission/Makefile
+#	@$(SEP)
+#	$(MAKE) -C $@
+#
+#Transmission-install: Transmission
+#	install -D $</daemon/transmission-daemon $(INSTALLDIR)/$</usr/sbin/transmission-daemon
+#	install -D $</daemon/transmission-remote $(INSTALLDIR)/$</usr/sbin/transmission-remote
+#	$(STRIP) $(INSTALLDIR)/$</usr/sbin/*
+#
+#Transmission-clean:
+#	[ ! -f Transmission/Makefile ] || $(MAKE) -C distclean
+#	@rm -f Transmission/Makefile
 
 wget/Makefile:
 	cd wget && autoreconf -i -f && $(CONFIGURE) --with-ssl=openssl --with-libssl-prefix=$(TOP)/openssl --sysconfdir=/etc --disable-opie --disable-ntlm --disable-debug --disable-nls --disable-iri --disable-dependency-tracking CFLAGS="$(EXTRACFLAGS) -I$(TOP)/openssl/include -I$(TOP)/zlib" LDFLAGS="-L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
