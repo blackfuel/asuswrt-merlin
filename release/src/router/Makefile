@@ -1505,6 +1505,7 @@ clean-build: dummy
 		rm -rf "$(TOP)/transmission-openssl"; \
 		rm -rf "$(TOP)/transmission-mbedtls"; \
 		rm -rf "$(TOP)/mbedtls"; \
+		rm -rf "$(TOP)/wget"; \
 		true; \
 	fi
 
@@ -4459,11 +4460,11 @@ mbedtls-install:
 		elif [ "$$PACKAGE_DIR" = "zstd" ]; then \
 			URL="https://github.com/facebook/zstd/archive/v1.3.2.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "tor" ]; then \
-			URL="https://www.torproject.org/dist/tor-0.3.1.7.tar.gz"; \
+			URL="https://www.torproject.org/dist/tor-0.3.1.8.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "nettle" ]; then \
 			URL="https://ftp.gnu.org/gnu/nettle/nettle-3.3.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "curl" ]; then \
-			URL="https://github.com/curl/curl/releases/download/curl-7_56_0/curl-7.56.0.tar.xz"; \
+			URL="https://github.com/curl/curl/releases/download/curl-7_56_1/curl-7.56.1.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "findutils" ]; then \
 			URL="https://ftp.gnu.org/pub/gnu/findutils/findutils-4.6.0.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "whois" ]; then \
@@ -4487,7 +4488,7 @@ mbedtls-install:
 		elif [ "$$PACKAGE_DIR" = "util-linux" ]; then \
 			URL="https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "lvm2" ]; then \
-			URL="https://mirrors.kernel.org/sourceware/lvm2/LVM2.2.02.175.tgz"; \
+			URL="https://mirrors.kernel.org/sourceware/lvm2/LVM2.2.02.176.tgz"; \
 		elif [ "$$PACKAGE_DIR" = "libgcrypt" ]; then \
 			URL="https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.8.1.tar.bz2"; \
 		elif [ "$$PACKAGE_DIR" = "cryptsetup-gcrypt" ] || \
@@ -4523,6 +4524,8 @@ mbedtls-install:
 			PACKAGE_NAME="transmission"; \
 		elif [ "$$PACKAGE_DIR" = "mbedtls" ]; then \
 			URL="https://tls.mbed.org/download/mbedtls-2.6.0-gpl.tgz"; \
+		elif [ "$$PACKAGE_DIR" = "wget" ]; then \
+			URL="https://ftp.gnu.org/gnu/wget/wget-1.19.2.tar.lz"; \
 		else \
 			URL="/$$PACKAGE_DIR-MISSING-URL"; \
 		fi; \
@@ -4568,7 +4571,9 @@ mbedtls-install:
 		elif [ "$${DL_FILE%.tar.bz2*}" != "$$DL_FILE" ]; then \
 			tar xjvf "$$DL_PATH" -C "$$DL_DIR/temp"; \
 		elif [ "$${DL_FILE%.tar.xz*}" != "$$DL_FILE" ]; then \
-			tar xvJf "$$DL_PATH" -C "$$DL_DIR/temp"; \
+			tar xJvf "$$DL_PATH" -C "$$DL_DIR/temp"; \
+		elif [ "$${DL_FILE%.tar.lz*}" != "$$DL_FILE" ]; then \
+			tar xlvf "$$DL_PATH" -C "$$DL_DIR/temp"; \
 		fi; \
 		mv -f "$$DL_DIR/temp/"* "$$PACKAGE_DIR"; \
 		rm -rf "$$DL_DIR/temp"; \
@@ -6708,9 +6713,9 @@ GeoIP-1.6.2-clean:
 #	@rm -f Transmission/Makefile
 
 wget/Makefile:
-	cd wget && autoreconf -i -f && $(CONFIGURE) --with-ssl=openssl --with-libssl-prefix=$(TOP)/openssl --sysconfdir=/etc --disable-opie --disable-ntlm --disable-debug --disable-nls --disable-iri --disable-dependency-tracking CFLAGS="$(EXTRACFLAGS) -I$(TOP)/openssl/include -I$(TOP)/zlib" LDFLAGS="-L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
+	cd wget && $(CONFIGURE) --with-ssl=openssl --with-libssl-prefix=$(TOP)/openssl --sysconfdir=/etc --disable-opie --disable-ntlm --disable-debug --disable-nls --disable-iri --disable-dependency-tracking CFLAGS="$(EXTRACFLAGS) -I$(TOP)/openssl/include -I$(TOP)/zlib" LDFLAGS="-L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
 
-wget: openssl zlib wget/Makefile
+wget: openssl zlib wget-unpack wget/Makefile
 	$(MAKE) -C wget CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -I$(TOP)/openssl/include -I$(TOP)/zlib"
 
 wget-clean:
