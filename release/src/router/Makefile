@@ -402,6 +402,19 @@ ASUSWRT_DIR="`readlink -f $(TOP)`/../../.."
 BLACKFUEL_ADDON="blackfuel-addon"
 BLACKFUEL_DIR="$(ASUSWRT_DIR)/$(BLACKFUEL_ADDON)"
 
+RTCONFIG_APCUPSD=y
+ifeq ($(RTCONFIG_APCUPSD),y)
+RTCONFIG_APCUPSD_CGI=y
+obj-y += apcupsd
+obj-y += libgd
+obj-y += freetype
+obj-y += libtiff
+obj-y += libpng
+obj-y += bzip2
+obj-y += jpeg
+obj-y += zlib
+endif
+
 RTCONFIG_TRANSMISSION=openssl
 ifeq ($(RTCONFIG_TRANSMISSION),openssl)
 obj-y += transmission-openssl
@@ -1490,10 +1503,7 @@ clean-build: dummy
 		rm -rf "$(TOP)/util-linux"; \
 		rm -rf "$(TOP)/lvm2"; \
 		rm -rf "$(TOP)/libgcrypt"; \
-		rm -rf "$(TOP)/cryptsetup-gcrypt"; \
-		rm -rf "$(TOP)/cryptsetup-openssl"; \
-		rm -rf "$(TOP)/cryptsetup-nettle"; \
-		rm -rf "$(TOP)/cryptsetup-kernel"; \
+		rm -rf "$(TOP)/cryptsetup-gcrypt $(TOP)/cryptsetup-openssl $(TOP)/cryptsetup-nettle $(TOP)/cryptsetup-kernel"; \
 		rm -rf "$(TOP)/pps-tools"; \
 		rm -rf "$(TOP)/setserial"; \
 		rm -rf "$(TOP)/ntp"; \
@@ -1502,10 +1512,16 @@ clean-build: dummy
 		rm -rf "$(TOP)/rtl-sdr"; \
 		rm -rf "$(TOP)/rtl-entropy"; \
 		rm -rf "$(TOP)/ncurses"; \
-		rm -rf "$(TOP)/transmission-openssl"; \
-		rm -rf "$(TOP)/transmission-mbedtls"; \
+		rm -rf "$(TOP)/transmission-openssl $(TOP)/transmission-mbedtls"; \
 		rm -rf "$(TOP)/mbedtls"; \
 		rm -rf "$(TOP)/wget"; \
+		rm -rf "$(TOP)/apcupsd"; \
+		rm -rf "$(TOP)/libgd"; \
+		rm -rf "$(TOP)/jpeg"; \
+		rm -rf "$(TOP)/libpng"; \
+		rm -rf "$(TOP)/libtiff"; \
+		rm -rf "$(TOP)/freetype"; \
+		rm -rf "$(TOP)/bzip2"; \
 		true; \
 	fi
 
@@ -3437,7 +3453,7 @@ argp-standalone/Makefile: argp-standalone-unpack argp-standalone/configure
 	@[ -f $@ ] || $(MAKE) argp-standalone-configure
 
 argp-standalone/configure:
-	@[ -f $@ ] || ( cd argp-standalone ; autoreconf )
+	@[ -f $@ ] || ( cd argp-standalone ; autoreconf -i -f )
 
 argp-standalone-configure:
 	@[ ! -d argp-standalone ] || [ -f "$(STAGEDIR)/usr/lib/libargp.a" ] || ( cd argp-standalone ; \
@@ -3769,7 +3785,7 @@ cryptsetup-gcrypt/Makefile: cryptsetup-gcrypt-unpack cryptsetup-gcrypt/configure
 	@[ -f $@ ] || $(MAKE) cryptsetup-gcrypt-configure
 
 cryptsetup-gcrypt/configure:
-	@[ -f $@ ] || ( cd cryptsetup-gcrypt ; autoreconf )
+	@[ -f $@ ] || ( cd cryptsetup-gcrypt ; autoreconf -i -f )
 
 cryptsetup-gcrypt-configure:
 	@[ ! -d cryptsetup-gcrypt ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-gcrypt ; \
@@ -3827,7 +3843,7 @@ cryptsetup-openssl/Makefile: cryptsetup-openssl-unpack cryptsetup-openssl/config
 	@[ -f $@ ] || $(MAKE) cryptsetup-openssl-configure
 
 cryptsetup-openssl/configure:
-	@[ -f $@ ] || ( cd cryptsetup-openssl ; autoreconf )
+	@[ -f $@ ] || ( cd cryptsetup-openssl ; autoreconf -i -f )
 
 cryptsetup-openssl-configure:
 	@[ ! -d cryptsetup-openssl ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-openssl ; \
@@ -3884,7 +3900,7 @@ cryptsetup-nettle/Makefile: cryptsetup-nettle-unpack cryptsetup-nettle/configure
 	@[ -f $@ ] || $(MAKE) cryptsetup-nettle-configure
 
 cryptsetup-nettle/configure:
-	@[ -f $@ ] || ( cd cryptsetup-nettle ; autoreconf )
+	@[ -f $@ ] || ( cd cryptsetup-nettle ; autoreconf -i -f )
 
 cryptsetup-nettle-configure:
 	@[ ! -d cryptsetup-nettle ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-nettle ; \
@@ -3941,7 +3957,7 @@ cryptsetup-kernel/Makefile: cryptsetup-kernel-unpack cryptsetup-kernel/configure
 	@[ -f $@ ] || $(MAKE) cryptsetup-kernel-configure
 
 cryptsetup-kernel/configure:
-	@[ -f $@ ] || ( cd cryptsetup-kernel ; autoreconf )
+	@[ -f $@ ] || ( cd cryptsetup-kernel ; autoreconf -i -f )
 
 cryptsetup-kernel-configure:
 	@[ ! -d cryptsetup-kernel ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-kernel ; \
@@ -4031,7 +4047,7 @@ setserial/Makefile: setserial-unpack setserial/configure
 	@[ -f $@ ] || $(MAKE) setserial-configure
 
 setserial/configure:
-	@[ -f $@ ] || ( cd setserial ; autoreconf )
+	@[ -f $@ ] || ( cd setserial ; autoreconf -i -f )
 
 setserial-configure:
 	@[ ! -d setserial ] || [ -f "$(STAGEDIR)/usr/bin/setserial" ] || ( cd setserial ; \
@@ -4075,7 +4091,7 @@ ntp/Makefile: ntp-unpack ntp/configure
 	@[ -f $@ ] || $(MAKE) ntp-configure
 
 ntp/configure:
-	@[ -f $@ ] || ( cd ntp ; autoreconf )
+	@[ -f $@ ] || ( cd ntp ; autoreconf -i -f )
 
 ntp-configure:
 	@[ ! -d ntp ] || [ -f "$(STAGEDIR)/usr/bin/ntpd" ] || ( cd ntp ; \
@@ -4189,7 +4205,7 @@ rtl-sdr/Makefile: rtl-sdr-unpack rtl-sdr/configure
 	@[ -f $@ ] || $(MAKE) rtl-sdr-configure
 
 rtl-sdr/configure:
-	@[ -f $@ ] || ( cd rtl-sdr ; autoreconf -i )
+	@[ -f $@ ] || ( cd rtl-sdr ; autoreconf -i -f )
 
 rtl-sdr-configure:
 	@[ ! -d rtl-sdr ] || [ -f "$(STAGEDIR)/usr/lib/librtlsdr.a" ] || ( cd rtl-sdr ; \
@@ -4448,6 +4464,338 @@ mbedtls-install:
 	chmod u+w $(INSTALLDIR)/mbedtls/usr/lib/*
 	$(STRIP) $(INSTALLDIR)/mbedtls/usr/lib/libmbed*.so*
 
+### apcupsd
+
+apcupsd: libusb-0.1.12 libgd apcupsd/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+apcupsd/Makefile: apcupsd-unpack
+	@[ -f $@ ] || $(MAKE) apcupsd-configure
+
+apcupsd-configure:
+	@[ ! -d apcupsd ] || [ -f "$(STAGEDIR)/usr/sbin/apcupsd" ] || \
+		(cd apcupsd ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		DESTDIR="$(STAGEDIR)" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(TOP)/libusb-0.1.12 -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(TOP)/libusb-0.1.12 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(TOP)/libusb-0.1.12/.libs -L$(STAGEDIR)/usr/lib" \
+		LIBS="-lpthread -lusb -ljpeg -lpng -ltiff -lfreetype -lgd" \
+		$(CONFIGURE) \
+		--prefix=/usr \
+		--sbindir=/usr/sbin \
+		--sysconfdir=/usr/local/etc/apcupsd \
+		--with-cgi-bin=/usr/local/etc/apcupsd \
+		--datarootdir=/usr/share \
+		--with-distname=unknown \
+		--with-upstype=usb \
+		--with-upscable=usb \
+		--without-serial-dev \
+		--enable-apcsmart \
+		--enable-dumb \
+		--enable-test \
+		$(if $(RTCONFIG_APCUPSD_CGI),--enable-cgi,--disable-cgi) \
+		--enable-usb \
+		--enable-modbus \
+		--enable-modbus-usb \
+		--without-x)
+
+apcupsd-stage: apcupsd-configure
+	@echo apcupsd
+	@[ ! -d apcupsd ] || ( \
+		$(MAKE) -C apcupsd $(PARALLEL_BUILD) && \
+		$(MAKE) -C apcupsd DESTDIR="$(STAGEDIR)" STRIP='' install )
+
+apcupsd-clean:
+	[ ! -f apcupsd/Makefile ] || $(MAKE) -C apcupsd distclean
+	@rm -f apcupsd/Makefile
+
+apcupsd-install:
+	install -d $(INSTALLDIR)/apcupsd/usr/sbin/
+	install -D $(STAGEDIR)/usr/sbin/apcupsd $(INSTALLDIR)/apcupsd/usr/sbin/
+	install -D $(STAGEDIR)/usr/sbin/smtp $(INSTALLDIR)/apcupsd/usr/sbin/
+	install -D $(STAGEDIR)/usr/sbin/apctest $(INSTALLDIR)/apcupsd/usr/sbin/
+	install -D $(STAGEDIR)/usr/sbin/apcaccess $(INSTALLDIR)/apcupsd/usr/sbin/
+	$(STRIP) $(INSTALLDIR)/apcupsd/usr/sbin/*
+	install -d $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/apcupsd.conf $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/apcupsd_mail.conf $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/changeme $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/commfailure $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/commok $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/offbattery $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/onbattery $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(BLACKFUEL_DIR)/packages/apcupsd/files/apccontrol $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+ifeq ($(RTCONFIG_APCUPSD_CGI),y)
+	install -d $(INSTALLDIR)/apcupsd/www/cgi-bin/apcupsd
+	cp -pf $(STAGEDIR)/usr/local/etc/apcupsd/*.cgi $(INSTALLDIR)/apcupsd/www/cgi-bin/apcupsd/
+	install -D $(STAGEDIR)/usr/local/etc/apcupsd/apcupsd.css $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(STAGEDIR)/usr/local/etc/apcupsd/hosts.conf $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+	install -D $(STAGEDIR)/usr/local/etc/apcupsd/multimon.conf $(INSTALLDIR)/apcupsd/usr/local/etc/apcupsd/
+endif
+
+### libgd
+
+libgd: jpeg libpng libtiff freetype libgd/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libgd/Makefile: libgd-unpack
+	@[ -f $@ ] || $(MAKE) libgd-configure
+
+libgd-configure:
+	@[ ! -d libgd ] || [ -f "$(STAGEDIR)/usr/lib/libgd.so" ] || ( \
+		cd libgd ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include -I$(STAGEDIR)/usr/include/freetype2" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include -I$(STAGEDIR)/usr/include/freetype2" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="-ljpeg -lpng -ltiff -lfreetype" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-rpath \
+		--without-x \
+		--without-fontconfig \
+		--with-jpeg \
+		--with-png \
+		--with-tiff \
+		--with-freetype \
+		--without-xpm \
+		)
+
+libgd-stage:
+	@echo libgd
+	@[ ! -d libgd ] || ( \
+		$(MAKE) -C libgd $(PARALLEL_BUILD) && \
+		$(MAKE) -C libgd install )
+
+libgd-clean:
+	[ ! -f libgd/Makefile ] || $(MAKE) -C libgd distclean
+	@rm -f libgd/Makefile
+
+libgd-install:
+	install -d $(INSTALLDIR)/libgd/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libgd.so* $(INSTALLDIR)/libgd/usr/lib/
+	chmod u+w $(INSTALLDIR)/libgd/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libgd/usr/lib/libgd.so*
+
+### jpeg
+
+jpeg: jpeg/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+jpeg/Makefile: jpeg-unpack
+	@[ -f $@ ] || $(MAKE) jpeg-configure
+
+jpeg-configure:
+	@[ ! -d jpeg ] || [ -f "$(STAGEDIR)/usr/lib/libjpeg.so" ] || ( \
+		cd jpeg ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-silent-rules \
+		--enable-maxmem=1 \
+		)
+
+jpeg-stage:
+	@echo jpeg
+	@[ ! -d jpeg ] || ( \
+		$(MAKE) -C jpeg $(PARALLEL_BUILD) && \
+		$(MAKE) -C jpeg install )
+
+jpeg-clean:
+	[ ! -f jpeg/Makefile ] || $(MAKE) -C jpeg distclean
+	@rm -f jpeg/Makefile
+
+jpeg-install:
+	install -d $(INSTALLDIR)/jpeg/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libjpeg.so* $(INSTALLDIR)/jpeg/usr/lib/
+	chmod u+w $(INSTALLDIR)/jpeg/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/jpeg/usr/lib/*
+
+### libpng
+
+libpng: libpng/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libpng/Makefile: libpng-unpack
+	@[ -f $@ ] || $(MAKE) libpng-configure
+
+libpng-configure:
+	@[ ! -d libpng ] || [ -f "$(STAGEDIR)/usr/lib/libpng.so" ] || ( \
+		cd libpng ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-silent-rules \
+		)
+
+libpng-stage:
+	@echo libpng
+	@[ ! -d libpng ] || ( \
+		$(MAKE) -C libpng $(PARALLEL_BUILD) && \
+		$(MAKE) -C libpng install )
+
+libpng-clean:
+	[ ! -f libpng/Makefile ] || $(MAKE) -C libpng distclean
+	@rm -f libpng/Makefile
+
+libpng-install:
+	install -d $(INSTALLDIR)/libpng/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libpng.so* $(INSTALLDIR)/libpng/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libpng16.so* $(INSTALLDIR)/libpng/usr/lib/
+	chmod u+w $(INSTALLDIR)/libpng/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libpng/usr/lib/*
+
+### libtiff
+
+libtiff: libtiff/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+libtiff/Makefile: libtiff-unpack
+	@[ -f $@ ] || $(MAKE) libtiff-configure
+
+libtiff-configure:
+	@[ ! -d libtiff ] || [ -f "$(STAGEDIR)/usr/lib/libtiff.so" ] || ( \
+		cd libtiff ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		LIBS="" \
+		$(CONFIGURE) \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--disable-silent-rules \
+		--enable-cxx \
+		--disable-lzma \
+		--enable-ccitt \
+		--enable-packbits \
+		--enable-lzw \
+		--enable-thunder \
+		--enable-next \
+		--enable-logluv \
+		--enable-mdi \
+		--enable-zlib \
+		--enable-jpeg \
+		--disable-old-jpeg \
+		--disable-jbig \
+		--without-x \
+		)
+
+libtiff-stage:
+	@echo libtiff
+	@[ ! -d libtiff ] || ( \
+		$(MAKE) -C libtiff $(PARALLEL_BUILD) && \
+		$(MAKE) -C libtiff install )
+
+libtiff-clean:
+	[ ! -f libtiff/Makefile ] || $(MAKE) -C libtiff distclean
+	@rm -f libtiff/Makefile
+
+libtiff-install:
+	install -d $(INSTALLDIR)/libtiff/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libtiff.so* $(INSTALLDIR)/libtiff/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libtiffxx.so* $(INSTALLDIR)/libtiff/usr/lib/
+	chmod u+w $(INSTALLDIR)/libtiff/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/libtiff/usr/lib/*
+
+### freetype
+
+freetype: zlib bzip2 freetype/Makefile
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+freetype/Makefile: freetype-unpack
+	@[ -f $@ ] || $(MAKE) freetype-configure
+
+freetype-configure:
+	@[ ! -d freetype ] || [ -f "$(STAGEDIR)/usr/lib/libfreetype.so" ] || ( \
+		cd freetype ; \
+		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		$(CONFIGURE) \
+		--host=arm-brcm-linux-uclibcgnueabi \
+		--build='' \
+		--prefix="$(STAGEDIR)/usr" \
+		--enable-shared \
+		--enable-static \
+		--with-bzip2=yes \
+		--with-zlib=yes \
+		--with-png=no \
+		)
+
+freetype-stage: freetype-configure
+	@echo freetype
+	@[ ! -d freetype ] || [ -f "$(STAGEDIR)/usr/lib/libfreetype.so" ] || ( \
+		$(MAKE) -C freetype $(PARALLEL_BUILD) && \
+		$(MAKE) -C freetype install )
+
+freetype-clean:
+	[ ! -f freetype/Makefile ] || $(MAKE) -C freetype distclean
+	@rm -f freetype/Makefile
+
+freetype-install:
+	install -d $(INSTALLDIR)/freetype/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libfreetype.so* $(INSTALLDIR)/freetype/usr/lib/
+	chmod u+w $(INSTALLDIR)/freetype/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/freetype/usr/lib/*
+
+### bzip2
+
+bzip2: bzip2-unpack
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+bzip2-stage:
+	@echo bzip2
+	@[ ! -d bzip2 ] || [ -f "$(STAGEDIR)/usr/lib/libbz2.a" ] || ( cd bzip2 ; \
+		$(MAKE) $(PARALLEL_BUILD) \
+		PREFIX="$(STAGEDIR)/usr" \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		AR="arm-brcm-linux-uclibcgnueabi-ar" \
+		RANLIB="arm-brcm-linux-uclibcgnueabi-ranlib" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		install ; \
+		$(MAKE) $(PARALLEL_BUILD) -f Makefile-libbz2_so \
+		PREFIX="$(STAGEDIR)/usr" \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		AR="arm-brcm-linux-uclibcgnueabi-ar" \
+		RANLIB="arm-brcm-linux-uclibcgnueabi-ranlib" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		all ; \
+		cp -df libbz2.so* $(STAGEDIR)/usr/lib/ \
+		)
+
+bzip2-clean:
+	-@$(MAKE) -C bzip2 clean
+
+bzip2-install:
+	install -d $(INSTALLDIR)/bzip2/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libbz2.so* $(INSTALLDIR)/bzip2/usr/lib/
+	chmod u+w $(INSTALLDIR)/bzip2/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/bzip2/usr/lib/*
+
 
 ### package download and patches
 
@@ -4526,6 +4874,20 @@ mbedtls-install:
 			URL="https://tls.mbed.org/download/mbedtls-2.6.0-gpl.tgz"; \
 		elif [ "$$PACKAGE_DIR" = "wget" ]; then \
 			URL="https://ftp.gnu.org/gnu/wget/wget-1.19.2.tar.lz"; \
+		elif [ "$$PACKAGE_DIR" = "apcupsd" ]; then \
+			URL="https://downloads.sourceforge.net/project/apcupsd/apcupsd - Stable/3.14.14/apcupsd-3.14.14.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "libgd" ]; then \
+			URL="https://github.com/libgd/libgd/releases/download/gd-2.2.5/libgd-2.2.5.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "jpeg" ]; then \
+			URL="http://www.ijg.org/files/jpegsrc.v9a.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "libpng" ]; then \
+			URL="https://sourceforge.net/projects/libpng/files/libpng16/1.6.34/libpng-1.6.34.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "libtiff" ]; then \
+			URL="http://download.osgeo.org/libtiff/tiff-4.0.8.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "freetype" ]; then \
+			URL="https://sourceforge.net/projects/freetype/files/freetype2/2.8.1/freetype-2.8.1.tar.bz2"; \
+		elif [ "$$PACKAGE_DIR" = "bzip2" ]; then \
+			URL="http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"; \
 		else \
 			URL="/$$PACKAGE_DIR-MISSING-URL"; \
 		fi; \
@@ -4557,10 +4919,11 @@ mbedtls-install:
 				tar czvf $$DL_PATH -C $$DL_DIR/temp $$DL_NAME; \
 			fi; \
 		elif [ ! -f "$$DL_PATH" ]; then \
-			wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" $$URL; \
+			wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" "$$URL"; \
 			while [ $$? -ne 0 ]; do \
 				sleep 10; \
-				wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" $$URL; \
+				[ ! -f "$$DL_PATH" ] || break; \
+				wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" "$$URL"; \
 			done; \
 			rm -rf "$$PACKAGE_DIR" || true; \
 		fi; \
@@ -4830,24 +5193,24 @@ ifneq ($(MEDIA_SERVER_STATIC),y)
 	$(STRIP) $(INSTALLDIR)/flac/usr/lib/libFLAC.so.8
 endif
 
-jpeg/stamp-h1:
-	cd jpeg && \
-	CFLAGS="-Os $(EXTRACFLAGS) -fPIC" CC=$(CC) AR2="touch" $(CONFIGURE) --enable-maxmem=1 --enable-shared --enable-static --prefix=''
-	touch $@
-
-jpeg: jpeg/stamp-h1
-	@$(MAKE) -C jpeg LIBTOOL="" O=o A=a CC=$(CC) AR2="touch" libjpeg.a libjpeg.so $(PARALLEL_BUILD)
-
-jpeg-clean:
-	-@$(MAKE) -C jpeg clean
-	@rm -f jpeg/stamp-h1
-
-jpeg-install:
-	@$(SEP)
-ifneq ($(MEDIA_SERVER_STATIC),y)
-	install -D jpeg/libjpeg.so $(INSTALLDIR)/jpeg/usr/lib/libjpeg.so
-	$(STRIP) $(INSTALLDIR)/jpeg/usr/lib/libjpeg.so
-endif
+#jpeg/stamp-h1:
+#	cd jpeg && \
+#	CFLAGS="-Os $(EXTRACFLAGS) -fPIC" CC=$(CC) AR2="touch" $(CONFIGURE) --enable-maxmem=1 --enable-shared --enable-static --prefix=''
+#	touch $@
+#
+#jpeg: jpeg/stamp-h1
+#	@$(MAKE) -C jpeg LIBTOOL="" O=o A=a CC=$(CC) AR2="touch" libjpeg.a libjpeg.so $(PARALLEL_BUILD)
+#
+#jpeg-clean:
+#	-@$(MAKE) -C jpeg clean
+#	@rm -f jpeg/stamp-h1
+#
+#jpeg-install:
+#	@$(SEP)
+#ifneq ($(MEDIA_SERVER_STATIC),y)
+#	install -D jpeg/libjpeg.so $(INSTALLDIR)/jpeg/usr/lib/libjpeg.so
+#	$(STRIP) $(INSTALLDIR)/jpeg/usr/lib/libjpeg.so
+#endif
 
 libexif/stamp-h1:
 	cd libexif && CFLAGS="-Os -Wall $(EXTRACFLAGS) -fPIC -ffunction-sections -fdata-sections" \
