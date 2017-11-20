@@ -3811,7 +3811,7 @@ cryptsetup-gcrypt-configure:
 		--enable-static-cryptsetup \
 		--with-libgcrypt-prefix=$(STAGEDIR)/usr )
 
-cryptsetup-gcrypt-stage: cryptsetup-gcrypt-configure
+cryptsetup-gcrypt-stage:
 	@echo cryptsetup-gcrypt
 	@[ ! -d cryptsetup-gcrypt ] || ( \
 		$(MAKE) -C cryptsetup-gcrypt $(PARALLEL_BUILD) && \
@@ -3868,7 +3868,7 @@ cryptsetup-openssl-configure:
 		--with-crypto_backend=openssl \
 		--enable-static-cryptsetup )
 
-cryptsetup-openssl-stage: cryptsetup-openssl-configure
+cryptsetup-openssl-stage:
 	@echo cryptsetup-openssl
 	@[ ! -d cryptsetup-openssl ] || ( \
 		$(MAKE) -C cryptsetup-openssl $(PARALLEL_BUILD) && \
@@ -3925,7 +3925,7 @@ cryptsetup-nettle-configure:
 		--with-crypto_backend=nettle \
 		--enable-static-cryptsetup )
 
-cryptsetup-nettle-stage: cryptsetup-nettle-configure
+cryptsetup-nettle-stage:
 	@echo cryptsetup-nettle
 	@[ ! -d cryptsetup-nettle ] || ( \
 		$(MAKE) -C cryptsetup-nettle $(PARALLEL_BUILD) && \
@@ -3982,7 +3982,7 @@ cryptsetup-kernel-configure:
 		--with-crypto_backend=kernel \
 		--enable-static-cryptsetup )
 
-cryptsetup-kernel-stage: cryptsetup-kernel-configure
+cryptsetup-kernel-stage:
 	@echo cryptsetup-kernel
 	@[ ! -d cryptsetup-kernel ] || ( \
 		$(MAKE) -C cryptsetup-kernel $(PARALLEL_BUILD) && \
@@ -4488,7 +4488,7 @@ apcupsd-configure:
 		--sysconfdir=/usr/local/etc/apcupsd \
 		--with-cgi-bin=/usr/local/etc/apcupsd \
 		--datarootdir=/usr/share \
-		--with-distname=asuswrt \
+		--with-distname=unknown \
 		--with-upstype=usb \
 		--with-upscable=usb \
 		--without-serial-dev \
