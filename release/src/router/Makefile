@@ -7075,11 +7075,20 @@ GeoIP-1.6.2-clean:
 #	[ ! -f Transmission/Makefile ] || $(MAKE) -C distclean
 #	@rm -f Transmission/Makefile
 
-wget/Makefile:
-	cd wget && $(CONFIGURE) --with-ssl=openssl --with-libssl-prefix=$(TOP)/openssl --sysconfdir=/etc --disable-opie --disable-ntlm --disable-debug --disable-nls --disable-iri --disable-dependency-tracking CFLAGS="$(EXTRACFLAGS) -I$(TOP)/openssl/include -I$(TOP)/zlib" LDFLAGS="-L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
+wget/Makefile.in: wget/Makefile.am
+	cd wget && autoreconf -fi
 
-wget: openssl zlib wget-unpack wget/Makefile
-	$(MAKE) -C wget CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -I$(TOP)/openssl/include -I$(TOP)/zlib"
+wget/Makefile: wget/Makefile.in
+	cd wget && $(CONFIGURE) \
+		--with-ssl=openssl --with-libssl-prefix=$(TOP)/openssl \
+		--sysconfdir=/etc --disable-opie --disable-ntlm --disable-debug --disable-nls --disable-rpath \
+		$(if $(RTCONFIG_IPV6),,--disable-ipv6) --disable-iri --without-included-regex  \
+		--disable-dependency-tracking \
+		CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -I$(TOP)/openssl/include -I$(TOP)/zlib" \
+		LDFLAGS="$(EXTRALDFLAGS) -Wl,--gc-sections -L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
+
+wget: openssl zlib wget/Makefile
+	$(MAKE) -C $@
 
 wget-clean:
 	[ ! -f wget/Makefile ] || $(MAKE) -C wget distclean
