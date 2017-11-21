@@ -25,12 +25,13 @@ exec_prefix=${prefix}
 
 APCPID=/var/run/apcupsd.pid
 APCUPSD="/usr/sbin/apcupsd"
+APCACCESS="/usr/sbin/apcaccess"
 APCUPSD_CONF="-f /usr/local/etc/apcupsd/apcupsd.conf"
 APCUPSD_NAME="$(basename $APCUPSD)"
 SHUTDOWN=/sbin/halt
 REBOOT=/sbin/reboot
 LOGGER="/usr/bin/logger -t $(/usr/bin/basename $0)"
-POWER_FAILURE_DIRTY_FLAG=/jffs/apcupsd_power_failure
+POWER_OUTAGE_FLAG=/jffs/apcupsd_power_outage
 SCRIPTSHELL=/bin/sh
 SCRIPTDIR=/usr/local/etc/apcupsd
 WALL=true
@@ -88,11 +89,11 @@ case "$1" in
     ;;
     onbattery)
 	echo "Power failure on UPS ${2}. Running on batteries." | ${WALL}
-	touch "${POWER_FAILURE_DIRTY_FLAG}"
+	touch "${POWER_OUTAGE_FLAG}"
     ;;
     offbattery)
 	echo "Power has returned on UPS ${2}..." | ${WALL}
-	rm -f "${POWER_FAILURE_DIRTY_FLAG}"
+	rm -f "${POWER_OUTAGE_FLAG}"
     ;;
     mainsback)
 	if [ -f /etc/apcupsd/powerfail ] ; then
@@ -139,7 +140,7 @@ case "$1" in
 	rm -f ${APCPID}
 	rm -f /etc/apcupsd/powerfail
 	rm -f /etc/apcupsd/nologin
-	rm -f "${POWER_FAILURE_DIRTY_FLAG}"
+	rm -f "${POWER_OUTAGE_FLAG}"
 	sleep 5
 	$($APCUPSD $APCUPSD_CONF)
 	echo $APCUPSD_NAME
@@ -162,11 +163,13 @@ case "$1" in
         sleep 1
 
 	# send an e-mail notification when the router has come back online
-        # after power outage
-	if [ -f "$POWER_FAILURE_DIRTY_FLAG" ]; then
-            sleep 30
-            rm -f "$POWER_FAILURE_DIRTY_FLAG"
-            $SCRIPTDIR/offbattery ${2} ${3} ${4}
+        # and the UPS is back on mains power, after a power outage
+	if [ -f "$POWER_OUTAGE_FLAG" ]; then
+            if [ "$($APCACCESS -p STATUS)" == "ONLINE" ]; then
+                sleep 30
+                rm -f "$POWER_OUTAGE_FLAG"
+                $SCRIPTDIR/offbattery ${2} ${3} ${4}
+            fi
         fi
 
         # start apcupsd, then wait 5 seconds and try again if not yet running
