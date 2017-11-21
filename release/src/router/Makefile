@@ -3811,7 +3811,7 @@ cryptsetup-gcrypt-configure:
 		--enable-static-cryptsetup \
 		--with-libgcrypt-prefix=$(STAGEDIR)/usr )
 
-cryptsetup-gcrypt-stage:
+cryptsetup-gcrypt-stage: cryptsetup-gcrypt-configure
 	@echo cryptsetup-gcrypt
 	@[ ! -d cryptsetup-gcrypt ] || ( \
 		$(MAKE) -C cryptsetup-gcrypt $(PARALLEL_BUILD) && \
@@ -3868,7 +3868,7 @@ cryptsetup-openssl-configure:
 		--with-crypto_backend=openssl \
 		--enable-static-cryptsetup )
 
-cryptsetup-openssl-stage:
+cryptsetup-openssl-stage: cryptsetup-openssl-configure
 	@echo cryptsetup-openssl
 	@[ ! -d cryptsetup-openssl ] || ( \
 		$(MAKE) -C cryptsetup-openssl $(PARALLEL_BUILD) && \
@@ -3925,7 +3925,7 @@ cryptsetup-nettle-configure:
 		--with-crypto_backend=nettle \
 		--enable-static-cryptsetup )
 
-cryptsetup-nettle-stage:
+cryptsetup-nettle-stage: cryptsetup-nettle-configure
 	@echo cryptsetup-nettle
 	@[ ! -d cryptsetup-nettle ] || ( \
 		$(MAKE) -C cryptsetup-nettle $(PARALLEL_BUILD) && \
@@ -3982,7 +3982,7 @@ cryptsetup-kernel-configure:
 		--with-crypto_backend=kernel \
 		--enable-static-cryptsetup )
 
-cryptsetup-kernel-stage:
+cryptsetup-kernel-stage: cryptsetup-kernel-configure
 	@echo cryptsetup-kernel
 	@[ ! -d cryptsetup-kernel ] || ( \
 		$(MAKE) -C cryptsetup-kernel $(PARALLEL_BUILD) && \
@@ -7087,7 +7087,7 @@ wget/Makefile: wget/Makefile.in
 		CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -I$(TOP)/openssl/include -I$(TOP)/zlib" \
 		LDFLAGS="$(EXTRALDFLAGS) -Wl,--gc-sections -L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
 
-wget: openssl zlib wget/Makefile
+wget: openssl zlib wget-unpack wget/Makefile
 	$(MAKE) -C $@
 
 wget-clean:
