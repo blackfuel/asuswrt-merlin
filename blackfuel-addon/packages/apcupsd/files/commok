@@ -7,9 +7,10 @@
 #
 . /usr/local/etc/apcupsd/apcupsd_mail.conf
 
-MSG="$HOSTNAME Communications with UPS restored"
+MSG="$HOSTNAME Communications with UPS $1 restored"
 #
 (
+   echo "From: $FROM"
    echo "To: $TO"
    echo "Subject: $MSG"
    echo " "

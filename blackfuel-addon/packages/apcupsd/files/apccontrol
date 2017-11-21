@@ -2,7 +2,7 @@
 #
 # Copyright (C) 1999-2002 Riccardo Facchetti <riccardo@master.oasi.gpa.it>
 #
-#  for apcupsd release 3.14.1 (04 May 2007) - unknown
+#  for apcupsd release 3.14.14 (31 May 2016) - unknown
 #
 # platforms/apccontrol.  Generated from apccontrol.in by configure.
 #
@@ -12,15 +12,25 @@
 #   platform subdirectory.
 #
 
+# NOTE: Asuswrt-Merlin users please add the following line to
+# your /jffs/scripts/init-start, to start apcupsd.
+#
+# /usr/local/etc/apcupsd/apccontrol start
+
 #
 # These variables are needed for set up the autoconf other variables.
 #
 prefix=/usr
-exec_prefix=/usr
+exec_prefix=${prefix}
 
 APCPID=/var/run/apcupsd.pid
-APCUPSD=/usr/sbin/apcupsd
+APCUPSD="/usr/sbin/apcupsd"
+APCUPSD_CONF="-f /usr/local/etc/apcupsd/apcupsd.conf"
+APCUPSD_NAME="$(basename $APCUPSD)"
 SHUTDOWN=/sbin/halt
+REBOOT=/sbin/reboot
+LOGGER="/usr/bin/logger -t $(/usr/bin/basename $0)"
+POWER_FAILURE_DIRTY_FLAG=/jffs/apcupsd_power_failure
 SCRIPTSHELL=/bin/sh
 SCRIPTDIR=/usr/local/etc/apcupsd
 WALL=true
@@ -78,11 +88,13 @@ case "$1" in
     ;;
     onbattery)
 	echo "Power failure on UPS ${2}. Running on batteries." | ${WALL}
+	touch "${POWER_FAILURE_DIRTY_FLAG}"
     ;;
     offbattery)
+	echo "Power has returned on UPS ${2}..." | ${WALL}
+	rm -f "${POWER_FAILURE_DIRTY_FLAG}"
     ;;
     mainsback)
-	echo "Power has returned on UPS ${2}..." | ${WALL}
 	if [ -f /etc/apcupsd/powerfail ] ; then
 	   printf "Continuing with shutdown."  | ${WALL}
 	fi
@@ -101,11 +113,13 @@ case "$1" in
     ;;
     doreboot)
 	echo "UPS ${2} initiating Reboot Sequence" | ${WALL}
-	${SHUTDOWN} -r now "apcupsd UPS ${2} initiated reboot"
+	${LOGGER} "apcupsd UPS ${2} initiated reboot"
+	${REBOOT}
     ;;
     doshutdown)
 	echo "UPS ${2} initiated Shutdown Sequence" | ${WALL}
-	${SHUTDOWN} -h now "apcupsd UPS ${2} initiated shutdown"
+	${LOGGER} "apcupsd UPS ${2} initiated shutdown"
+	${SHUTDOWN}
     ;;
     annoyme)
 	echo "Power problems with UPS ${2}. Please logoff." | ${WALL}
@@ -121,14 +135,14 @@ case "$1" in
     ;;
     restartme)
 	echo -n "Restarting APCUPSD Power Management: "
-	THEPID=`cat ${APCPID}`
-	kill ${THEPID}
+	killall -9 $APCUPSD_NAME && sleep 1
 	rm -f ${APCPID}
 	rm -f /etc/apcupsd/powerfail
 	rm -f /etc/apcupsd/nologin
+	rm -f "${POWER_FAILURE_DIRTY_FLAG}"
 	sleep 5
-	`${APCUPSD}`
-	echo "apcupsd"
+	$($APCUPSD $APCUPSD_CONF)
+	echo $APCUPSD_NAME
     ;;
     startselftest)
     ;;
@@ -138,9 +152,50 @@ case "$1" in
     ;;
     battattach)
     ;;
+    start)
+        (
+        # load the kernel modules for USB-enabled UPS device
+        sleep 5
+        modprobe input_core
+        modprobe hid
+        modprobe usbhid
+        sleep 1
+
+	# send an e-mail notification when the router has come back online
+        # after power outage
+	if [ -f "$POWER_FAILURE_DIRTY_FLAG" ]; then
+            sleep 30
+            rm -f "$POWER_FAILURE_DIRTY_FLAG"
+            $SCRIPTDIR/offbattery ${2} ${3} ${4}
+        fi
+
+        # start apcupsd, then wait 5 seconds and try again if not yet running
+        loop_wait=0
+        while : ; do
+          if [ $loop_wait -eq 0 ]; then
+            loop_wait=5
+          else
+            $LOGGER "waiting for UPS to become ready [$$]"
+            sleep $loop_wait
+          fi
+
+          if [ -n "$(pidof $APCUPSD_NAME)" ]; then
+            killall -9 $APCUPSD_NAME >/dev/null 2>&1
+            sleep 2
+          fi
+
+          [ -z "$(pidof $APCUPSD_NAME)" ] && $($APCUPSD $APCUPSD_CONF) && sleep 5
+          [ -z "$(pidof $APCUPSD_NAME)" ] && continue
+
+          $LOGGER "started $APCUPSD_NAME [$$]"
+          break
+        done
+        ) &
+    ;;
     *)	echo "Usage: ${0##*/} command"
 	echo "	     warning: this script is intended to be launched by"
 	echo "	     apcupsd and should never be launched by users."
 	exit 1
     ;;
 esac
+

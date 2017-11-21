@@ -7,9 +7,10 @@
 #
 . /usr/local/etc/apcupsd/apcupsd_mail.conf
 
-MSG="$HOSTNAME Power Failure !!!"
+MSG="$HOSTNAME UPS $1 Power Failure !!!"
 #
 (
+   echo "From: $FROM"
    echo "To: $TO"
    echo "Subject: $MSG"
    echo " "
