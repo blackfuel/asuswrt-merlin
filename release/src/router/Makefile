@@ -415,6 +415,11 @@ obj-y += jpeg
 obj-y += zlib
 endif
 
+RTCONFIG_POWSTATD=y
+ifeq ($(RTCONFIG_POWSTATD),y)
+obj-y += powstatd
+endif
+
 RTCONFIG_TRANSMISSION=openssl
 ifeq ($(RTCONFIG_TRANSMISSION),openssl)
 obj-y += transmission-openssl
@@ -1522,6 +1527,7 @@ clean-build: dummy
 		rm -rf "$(TOP)/libtiff"; \
 		rm -rf "$(TOP)/freetype"; \
 		rm -rf "$(TOP)/bzip2"; \
+		rm -rf "$(TOP)/powstatd"; \
 		true; \
 	fi
 
@@ -4796,6 +4802,34 @@ bzip2-install:
 	chmod u+w $(INSTALLDIR)/bzip2/usr/lib/*
 	$(STRIP) $(INSTALLDIR)/bzip2/usr/lib/*
 
+### powstatd
+
+powstatd: powstatd-unpack
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+powstatd-stage:
+	@echo powstatd
+	@[ ! -d powstatd ] || [ -f "$(STAGEDIR)/usr/sbin/powstatd" ] || ( cd powstatd ; \
+		$(MAKE) $(PARALLEL_BUILD) \
+		DESTDIR="$(STAGEDIR)/usr/sbin" \
+		PFSCR="$(STAGEDIR)/usr/sbin/powerfail" \
+		MANDIR="$(STAGEDIR)/usr/share/man/man8" \
+		CFGDIR="/usr/local/etc" \
+		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
+		CFLGS="-Os -Wall -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -fPIC -std=gnu99 -D_GNU_SOURCE -I$(TOP)/shared -ffunction-sections -fdata-sections" \
+		LIB="-lgcc_s -L$(TOP)/nvram$(BCMEX) -lnvram -L$(TOP)/shared -lshared -ffunction-sections -fdata-sections -Wl,--gc-sections" )
+
+powstatd-clean:
+	-@$(MAKE) -C powstatd clean
+
+powstatd-install:
+	install -d $(INSTALLDIR)/powstatd/usr/sbin/
+	install -d $(INSTALLDIR)/powstatd/usr/local/etc/powstatd/
+	install -D powstatd $(INSTALLDIR)/powstatd/usr/sbin/
+	$(STRIP) $(INSTALLDIR)/powstatd/usr/sbin/powstatd
+	install -D $(BLACKFUEL_DIR)/packages/powstatd/files/powerfail $(INSTALLDIR)/powstatd/usr/sbin/
+	install -D $(BLACKFUEL_DIR)/packages/powstatd/files/powstatd.conf $(INSTALLDIR)/powstatd/usr/local/etc/powstatd/
+
 
 ### package download and patches
 
@@ -4808,11 +4842,11 @@ bzip2-install:
 		elif [ "$$PACKAGE_DIR" = "zstd" ]; then \
 			URL="https://github.com/facebook/zstd/archive/v1.3.2.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "tor" ]; then \
-			URL="https://www.torproject.org/dist/tor-0.3.1.8.tar.gz"; \
+			URL="https://www.torproject.org/dist/tor-0.3.1.9.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "nettle" ]; then \
-			URL="https://ftp.gnu.org/gnu/nettle/nettle-3.3.tar.gz"; \
+			URL="https://ftp.gnu.org/gnu/nettle/nettle-3.4.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "curl" ]; then \
-			URL="https://github.com/curl/curl/releases/download/curl-7_56_1/curl-7.56.1.tar.xz"; \
+			URL="https://github.com/curl/curl/releases/download/curl-7_57_0/curl-7.57.0.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "findutils" ]; then \
 			URL="https://ftp.gnu.org/pub/gnu/findutils/findutils-4.6.0.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "whois" ]; then \
@@ -4888,6 +4922,8 @@ bzip2-install:
 			URL="https://sourceforge.net/projects/freetype/files/freetype2/2.8.1/freetype-2.8.1.tar.bz2"; \
 		elif [ "$$PACKAGE_DIR" = "bzip2" ]; then \
 			URL="http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "powstatd" ]; then \
+			URL="http://deb.debian.org/debian/pool/main/p/powstatd/powstatd_1.5.1.orig.tar.gz"; \
 		else \
 			URL="/$$PACKAGE_DIR-MISSING-URL"; \
 		fi; \
