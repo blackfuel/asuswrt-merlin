@@ -26,7 +26,7 @@ exec_prefix=${prefix}
 APCPID=/var/run/apcupsd.pid
 APCUPSD="/usr/sbin/apcupsd"
 APCACCESS="/usr/sbin/apcaccess"
-APCUPSD_CONF="-f /usr/local/etc/apcupsd/apcupsd.conf"
+APCUPSD_CONF="/usr/local/etc/apcupsd/apcupsd.conf"
 APCUPSD_NAME="$(basename $APCUPSD)"
 SHUTDOWN=/sbin/halt
 REBOOT=/sbin/reboot
@@ -142,7 +142,7 @@ case "$1" in
 	rm -f /etc/apcupsd/nologin
 	rm -f "${POWER_OUTAGE_FLAG}"
 	sleep 5
-	$($APCUPSD $APCUPSD_CONF)
+	$($APCUPSD -f $APCUPSD_CONF)
 	echo $APCUPSD_NAME
     ;;
     startselftest)
@@ -154,23 +154,15 @@ case "$1" in
     battattach)
     ;;
     start)
+        ARG1="$1"
+        ARG2="$(grep ^UPSNAME $APCUPSD_CONF | cut -d' ' -f2)"
+        ARG3=""
+        ARG4=""
         (
         # load the kernel modules for USB-enabled UPS device
         sleep 5
-        modprobe input_core
-        modprobe hid
         modprobe usbhid
         sleep 1
-
-	# send an e-mail notification when the router has come back online
-        # and the UPS is back on mains power, after a power outage
-	if [ -f "$POWER_OUTAGE_FLAG" ]; then
-            if [ "$($APCACCESS -p STATUS)" == "ONLINE" ]; then
-                sleep 30
-                rm -f "$POWER_OUTAGE_FLAG"
-                $SCRIPTDIR/offbattery ${2} ${3} ${4}
-            fi
-        fi
 
         # start apcupsd, then wait 5 seconds and try again if not yet running
         loop_wait=0
@@ -193,6 +185,19 @@ case "$1" in
           $LOGGER "started $APCUPSD_NAME [$$]"
           break
         done
+
+	# send an e-mail notification when the router has come back online
+        # and the UPS is back on mains power, after a power outage
+	if [ -f "$POWER_OUTAGE_FLAG" ]; then
+            if [ "$(echo $($APCACCESS -p STATUS))" == "ONLINE" ]; then
+                sleep 30
+                rm -f "$POWER_OUTAGE_FLAG"
+                MSG="$($APCUPSD -V) Power has returned on UPS $ARG2..."
+                echo "$(date '+%Y-%m-%d %H:%M:%S %z')  $MSG" >>/var/log/apcupsd.events
+                $LOGGER "$MSG"
+                $SCRIPTDIR/offbattery $ARG2 $ARG3 $ARG4
+            fi
+        fi
         ) &
     ;;
     *)	echo "Usage: ${0##*/} command"

@@ -17,5 +17,5 @@ MSG="$HOSTNAME Communications with UPS $1 lost"
    echo "$MSG"
    echo " "
    /usr/sbin/apcaccess status
-) | $MAILPROG -t -S $MAILHOST -f $FROM
+) | $MAILPROG -t -S $MAILHOST -f $(echo $FROM | sed -r 's/.*<(.*)>.*/\1/')
 exit 0
