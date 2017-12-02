@@ -4825,7 +4825,7 @@ powstatd-clean:
 powstatd-install:
 	install -d $(INSTALLDIR)/powstatd/usr/sbin/
 	install -d $(INSTALLDIR)/powstatd/usr/local/etc/powstatd/
-	install -D powstatd $(INSTALLDIR)/powstatd/usr/sbin/
+	install -D powstatd/powstatd $(INSTALLDIR)/powstatd/usr/sbin/
 	$(STRIP) $(INSTALLDIR)/powstatd/usr/sbin/powstatd
 	install -D $(BLACKFUEL_DIR)/packages/powstatd/files/powerfail $(INSTALLDIR)/powstatd/usr/sbin/
 	install -D $(BLACKFUEL_DIR)/packages/powstatd/files/powstatd.conf $(INSTALLDIR)/powstatd/usr/local/etc/powstatd/
