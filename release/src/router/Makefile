@@ -4804,7 +4804,7 @@ bzip2-install:
 
 ### powstatd
 
-powstatd: powstatd-unpack
+powstatd: shared powstatd-unpack
 	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
 
 powstatd-stage:
@@ -4817,7 +4817,7 @@ powstatd-stage:
 		CFGDIR="/usr/local/etc" \
 		CC="arm-brcm-linux-uclibcgnueabi-gcc" \
 		CFLGS="-Os -Wall -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -fPIC -std=gnu99 -D_GNU_SOURCE -I$(TOP)/shared -ffunction-sections -fdata-sections" \
-		LIB="-lgcc_s -L$(TOP)/nvram$(BCMEX) -lnvram -L$(TOP)/shared -lshared -ffunction-sections -fdata-sections -Wl,--gc-sections" )
+		LIB="-lgcc_s -L$(TOP)/nvram$(BCMEX) -lnvram -L$(TOP)/shared -lshared $(if $(RTCONFIG_QTN),-L$(TOP)/libqcsapi_client -lqcsapi_client) -ffunction-sections -fdata-sections -Wl,--gc-sections" )
 
 powstatd-clean:
 	-@$(MAKE) -C powstatd clean
