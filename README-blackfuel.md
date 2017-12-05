@@ -31,11 +31,10 @@ All ARM models are supported:
 - RT-AC3200
 - RT-AC5300
 
-**This firmware's filesystem has two new root folders that contain additional programs.**
+**This firmware's filesystem has a new root folder that contain additional programs.**
 
 Folder | Description
 ------ | -----------
-**/native** | *Pre-built programs linked against the AsusWRT firmware libraries.*
 **/entware** | *Pre-built programs linked against the Entware-ng libraries.*
 
 
