@@ -937,6 +937,7 @@ ifeq ($(RTCONFIG_TOR),y)
 obj-y += openssl
 obj-y += zlib
 obj-y += libevent-2.0.21
+obj-y += liblz4
 obj-y += xzutils
 obj-y += zstd
 obj-y += tor
@@ -1528,6 +1529,9 @@ clean-build: dummy
 		rm -rf "$(TOP)/freetype"; \
 		rm -rf "$(TOP)/bzip2"; \
 		rm -rf "$(TOP)/powstatd"; \
+		rm -rf "$(TOP)/zlib"; \
+		rm -rf "$(TOP)/lzo"; \
+		rm -rf "$(TOP)/liblz4"; \
 		true; \
 	fi
 
@@ -3081,7 +3085,7 @@ xzutils-install:
 
 ### zstd
 
-zstd: xzutils zstd/Makefile
+zstd: liblz4 xzutils zstd/Makefile
 	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
 
 zstd/Makefile:
@@ -4830,6 +4834,70 @@ powstatd-install:
 	install -D $(BLACKFUEL_DIR)/packages/powstatd/files/powerfail $(INSTALLDIR)/powstatd/usr/sbin/
 	install -D $(BLACKFUEL_DIR)/packages/powstatd/files/powstatd.conf $(INSTALLDIR)/powstatd/usr/local/etc/powstatd/
 
+### zlib
+
+zlib: zlib/stamp-h1
+	@[ ! -f zlib/stamp-h1 ] || ( $(SEP); \
+		[ -f "$(STAGEDIR)/usr/lib/libz.so" ] || ( \
+			$(MAKE) -C zlib $(PARALLEL_BUILD) && $(MAKE) -C zlib install \
+			) \
+		)
+
+zlib/stamp-h1: zlib-unpack
+	cd zlib && \
+	CC=$(CC) \
+	AR=$(AR) \
+	LD=$(LD) \
+	RANLIB=$(RANLIB) \
+	CFLAGS="-ffunction-sections -fdata-sections -Os -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+	LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib -lgcc_s" \
+	./configure \
+		--prefix="$(STAGEDIR)/usr" \
+		--shared \
+		--uname=Linux
+	touch $@
+
+zlib-clean:
+	[ ! -f zlib/stamp-h1 ] || $(MAKE) -C zlib clean
+	@rm -f zlib/stamp-h1
+
+zlib-install:
+	install -d $(INSTALLDIR)/zlib/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libz.so* $(INSTALLDIR)/zlib/usr/lib/
+	chmod u+w $(INSTALLDIR)/zlib/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/zlib/usr/lib/*
+
+### liblz4
+
+liblz4: liblz4-unpack
+	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
+
+liblz4-stage:
+	@echo liblz4
+	@[ ! -d liblz4 ] || [ -f "$(STAGEDIR)/usr/lib/liblz4.so" ] || ( cd liblz4 ; \
+		$(MAKE) $(PARALLEL_BUILD) \
+		CC=$(CC) \
+		AR=$(AR) \
+		LD=$(LD) \
+		RANLIB=$(RANLIB) \
+		CFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		DESTDIR="" \
+		PREFIX="$(STAGEDIR)/usr" \
+		LIBDIR="$(STAGEDIR)/usr/lib" \
+		INCLUDEDIR="$(STAGEDIR)/usr/include" \
+		install \
+		)
+
+liblz4-clean:
+	-@$(MAKE) -C liblz4 clean
+
+liblz4-install:
+	install -d $(INSTALLDIR)/liblz4/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/liblz4.so* $(INSTALLDIR)/liblz4/usr/lib/
+	chmod u+w $(INSTALLDIR)/liblz4/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/liblz4/usr/lib/*
+
 
 ### package download and patches
 
@@ -4924,6 +4992,12 @@ powstatd-install:
 			URL="http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "powstatd" ]; then \
 			URL="http://deb.debian.org/debian/pool/main/p/powstatd/powstatd_1.5.1.orig.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "zlib" ]; then \
+			URL="https://zlib.net/zlib-1.2.11.tar.xz"; \
+		elif [ "$$PACKAGE_DIR" = "lzo" ]; then \
+			URL="http://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "liblz4" ]; then \
+			URL="https://github.com/lz4/lz4/archive/v1.8.0.tar.gz"; \
 		else \
 			URL="/$$PACKAGE_DIR-MISSING-URL"; \
 		fi; \
@@ -5269,21 +5343,22 @@ ifneq ($(MEDIA_SERVER_STATIC),y)
 	$(STRIP) $(INSTALLDIR)/libexif/usr/lib/libexif.so.12
 endif
 
-zlib/stamp-h1:
-	cd zlib && \
-	CC=$(CC) AR="ar rc" RANLIB=$(RANLIB) LD=$(LD) CFLAGS="-Os -Wall $(EXTRACFLAGS) -fPIC" LDSHAREDLIBC="$(EXTRALDFLAGS)" \
-	./configure --shared --prefix=/usr --libdir=/usr/lib
-	touch $@
+#zlib/stamp-h1:
+#	cd zlib && \
+#	CC=$(CC) AR="ar rc" RANLIB=$(RANLIB) LD=$(LD) CFLAGS="-Os -Wall $(EXTRACFLAGS) -fPIC" LDSHAREDLIBC="$(EXTRALDFLAGS)" \
+#	./configure --shared --prefix=/usr --libdir=/usr/lib
+#	touch $@
+#
+#zlib: zlib/stamp-h1
+#	@$(MAKE) -C zlib CC=$(CC) AR="ar rc" RANLIB=$(RANLIB) LD=$(LD) all $(PARALLEL_BUILD) && $(MAKE) $@-stage
+#
+#zlib-clean:
+#	-@$(MAKE) -C zlib clean
+#	@rm -f zlib/stamp-h1
+#
+#zlib-install:
+#	@$(SEP)
 
-zlib: zlib/stamp-h1
-	@$(MAKE) -C zlib CC=$(CC) AR="ar rc" RANLIB=$(RANLIB) LD=$(LD) all $(PARALLEL_BUILD) && $(MAKE) $@-stage
-
-zlib-clean:
-	-@$(MAKE) -C zlib clean
-	@rm -f zlib/stamp-h1
-
-zlib-install:
-	@$(SEP)
 # commented out for mt-daapd-svn-1696
 ifneq ($(MEDIA_SERVER_STATIC),y)
 	install -d $(INSTALLDIR)/zlib/usr/lib
@@ -5691,7 +5766,7 @@ ebtables-install: ebtables
 ebtables-clean:
 	-@make -C ebtables clean
 
-lzo/stamp-h1:
+lzo/stamp-h1: lzo-unpack
 	cd lzo && \
 	CFLAGS="-O3 -Wall $(EXTRACFLAGS)" $(CONFIGURE) --enable-shared --enable-static \
 		--prefix=/usr \
