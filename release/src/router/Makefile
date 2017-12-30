@@ -1532,6 +1532,7 @@ clean-build: dummy
 		rm -rf "$(TOP)/zlib"; \
 		rm -rf "$(TOP)/lzo"; \
 		rm -rf "$(TOP)/liblz4"; \
+		rm -rf "$(TOP)/json-c"; \
 		true; \
 	fi
 
@@ -3171,10 +3172,11 @@ libsodium/configure:
 libsodium-configure:
 	@[ ! -d libsodium ] || [ -f "$(STAGEDIR)/usr/lib/libsodium.so" ] || ( cd libsodium ; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		CFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lpthread" \
+		ac_cv_tls=none \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
 		--disable-static \
@@ -3213,9 +3215,9 @@ dnscrypt/configure:
 dnscrypt-configure:
 	@[ ! -d dnscrypt ] || [ -f "$(STAGEDIR)/usr/sbin/dnscrypt-proxy" ] || ( cd dnscrypt ; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		CFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lpthread" \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
@@ -3667,14 +3669,15 @@ util-linux-configure:
 	@[ ! -d util-linux ] || [ -f "$(STAGEDIR)/usr/lib/libuuid.so" ] || ( \
 		cd util-linux ; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fno-data-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -lm" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fno-data-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -lm" \
-		LDFLAGS="$(LDFLAGS) -ffunction-sections -fno-data-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DHAVE_POSIX_FALLOCATE=1 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include -lm" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DHAVE_POSIX_FALLOCATE=1 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include -lm" \
+		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lm $(if $(RTCONFIG_BCMARM),-lncursesw,-lncurses) -L$(STAGEDIR)/usr/lib" \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
 		--enable-shared \
 		--enable-static \
+		--disable-tls \
 		--disable-rpath \
 		--disable-silent-rules \
 		--disable-bash-completion \
@@ -3788,7 +3791,7 @@ lvm2-install:
 
 ### cryptsetup-gcrypt
 
-cryptsetup-gcrypt: popt util-linux lvm2 libgpg-error libgcrypt cryptsetup-gcrypt/Makefile
+cryptsetup-gcrypt: json-c popt util-linux lvm2 libgpg-error libgcrypt cryptsetup-gcrypt/Makefile
 	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
 
 cryptsetup-gcrypt/Makefile: cryptsetup-gcrypt-unpack cryptsetup-gcrypt/configure
@@ -3799,17 +3802,18 @@ cryptsetup-gcrypt/configure:
 
 cryptsetup-gcrypt-configure:
 	@[ ! -d cryptsetup-gcrypt ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-gcrypt ; \
-		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/files/linux/if_alg.h"; \
 		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
 		if [ -f "$$IF_ALG_H" ]; then \
 		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
 		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
 		fi; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lpthread -lgpg-error -luuid -lblkid -ldl -lgcrypt -L$(STAGEDIR)/usr/lib" \
+		ac_cv_func_posix_fallocate=yes \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
 		--enable-shared \
@@ -3846,7 +3850,7 @@ cryptsetup-gcrypt-install:
 
 ### cryptsetup-openssl
 
-cryptsetup-openssl: popt util-linux lvm2 openssl cryptsetup-openssl/Makefile
+cryptsetup-openssl: json-c popt util-linux lvm2 openssl cryptsetup-openssl/Makefile
 	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
 
 cryptsetup-openssl/Makefile: cryptsetup-openssl-unpack cryptsetup-openssl/configure
@@ -3857,17 +3861,18 @@ cryptsetup-openssl/configure:
 
 cryptsetup-openssl-configure:
 	@[ ! -d cryptsetup-openssl ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-openssl ; \
-		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/files/linux/if_alg.h"; \
 		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
 		if [ -f "$$IF_ALG_H" ]; then \
 		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
 		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
 		fi; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lpthread -lssl -lcrypto -lz -luuid -lblkid -ldl -L$(STAGEDIR)/usr/lib" \
+		ac_cv_func_posix_fallocate=yes \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
 		--enable-shared \
@@ -3903,7 +3908,7 @@ cryptsetup-openssl-install:
 
 ### cryptsetup-nettle
 
-cryptsetup-nettle: popt util-linux lvm2 nettle cryptsetup-nettle/Makefile
+cryptsetup-nettle: json-c popt util-linux lvm2 nettle cryptsetup-nettle/Makefile
 	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
 
 cryptsetup-nettle/Makefile: cryptsetup-nettle-unpack cryptsetup-nettle/configure
@@ -3914,17 +3919,18 @@ cryptsetup-nettle/configure:
 
 cryptsetup-nettle-configure:
 	@[ ! -d cryptsetup-nettle ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-nettle ; \
-		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/files/linux/if_alg.h"; \
 		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
 		if [ -f "$$IF_ALG_H" ]; then \
 		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
 		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
 		fi; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lpthread -luuid -lblkid -ldl -lnettle -L$(STAGEDIR)/usr/lib" \
+		ac_cv_func_posix_fallocate=yes \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
 		--enable-shared \
@@ -3960,7 +3966,7 @@ cryptsetup-nettle-install:
 
 ### cryptsetup-kernel
 
-cryptsetup-kernel: popt util-linux lvm2 cryptsetup-kernel/Makefile
+cryptsetup-kernel: json-c popt util-linux lvm2 cryptsetup-kernel/Makefile
 	@[ ! -d $@ ] || ( $(SEP); $(MAKE) $@-stage )
 
 cryptsetup-kernel/Makefile: cryptsetup-kernel-unpack cryptsetup-kernel/configure
@@ -3971,17 +3977,18 @@ cryptsetup-kernel/configure:
 
 cryptsetup-kernel-configure:
 	@[ ! -d cryptsetup-kernel ] || [ -f "$(STAGEDIR)/usr/lib/libcryptsetup.so" ] || ( cd cryptsetup-kernel ; \
-		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/linux/if_alg.h"; \
+		IF_ALG_H="$(BLACKFUEL_DIR)/packages/cryptsetup/files/linux/if_alg.h"; \
 		STAGEDIR_INCLUDE_LINUX="$(STAGEDIR)/usr/include/linux"; \
 		if [ -f "$$IF_ALG_H" ]; then \
 		  mkdir -p "$$STAGEDIR_INCLUDE_LINUX"; \
 		  cp -pn "$$IF_ALG_H" "$$STAGEDIR_INCLUDE_LINUX"; \
 		fi; \
 		PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
-		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
-		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include" \
+		CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+		CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -DCLOCK_MONOTONIC_RAW=4 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
 		LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
 		LIBS="-lpthread -luuid -lblkid -ldl -L$(STAGEDIR)/usr/lib" \
+		ac_cv_func_posix_fallocate=yes \
 		$(CONFIGURE) \
 		--prefix="$(STAGEDIR)/usr" \
 		--enable-shared \
@@ -4324,6 +4331,7 @@ transmission-openssl-configure:
 		LIBEVENT_LIBS="-L$(STAGEDIR)/usr/lib -levent" \
 		ZLIB_CFLAGS="-I$(STAGEDIR)/usr/include" \
 		ZLIB_LIBS="-L$(STAGEDIR)/usr/lib -lz" \
+		ac_cv_func_posix_fallocate=yes \
 		./autogen.sh \
 		--host=arm-brcm-linux-uclibcgnueabi \
 		--build=x86_64-linux-gnu \
@@ -4898,6 +4906,41 @@ liblz4-install:
 	chmod u+w $(INSTALLDIR)/liblz4/usr/lib/*
 	$(STRIP) $(INSTALLDIR)/liblz4/usr/lib/*
 
+### json-c
+
+json-c: json-c/stamp-h1
+	@[ ! -f json-c/stamp-h1 ] || ( $(SEP); \
+		[ -f "$(STAGEDIR)/usr/lib/libjson-c.so" ] || ( \
+			$(MAKE) -C json-c $(PARALLEL_BUILD) && $(MAKE) -C json-c install \
+			) \
+		)
+
+json-c/stamp-h1: json-c-unpack
+	cd json-c ; \
+	PKG_CONFIG_PATH="$(STAGEDIR)/usr/lib/pkgconfig" \
+	CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+	CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
+	LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
+	LIBS="" \
+	ac_cv_func_realloc_0_nonnull=yes \
+	ac_cv_func_malloc_0_nonnull=yes \
+	$(CONFIGURE) \
+	--prefix="$(STAGEDIR)/usr" \
+	--enable-shared \
+	--enable-static \
+	--disable-silent-rules
+	touch $@
+
+json-c-clean:
+	[ ! -f json-c/stamp-h1 ] || $(MAKE) -C json-c clean
+	@rm -f json-c/stamp-h1
+
+json-c-install:
+	install -d $(INSTALLDIR)/json-c/usr/lib/
+	cp -df $(STAGEDIR)/usr/lib/libjson-c.so* $(INSTALLDIR)/json-c/usr/lib/
+	chmod u+w $(INSTALLDIR)/json-c/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/json-c/usr/lib/*
+
 
 ### package download and patches
 
@@ -4908,7 +4951,7 @@ liblz4-install:
 		if [ "$$PACKAGE_DIR" = "xzutils" ]; then \
 			URL="https://tukaani.org/xz/xz-5.2.3.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "zstd" ]; then \
-			URL="https://github.com/facebook/zstd/archive/v1.3.2.tar.gz"; \
+			URL="https://github.com/facebook/zstd/archive/v1.3.3.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "tor" ]; then \
 			URL="https://www.torproject.org/dist/tor-0.3.1.9.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "nettle" ]; then \
@@ -4918,9 +4961,9 @@ liblz4-install:
 		elif [ "$$PACKAGE_DIR" = "findutils" ]; then \
 			URL="https://ftp.gnu.org/pub/gnu/findutils/findutils-4.6.0.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "whois" ]; then \
-			URL="http://ftp.debian.org/debian/pool/main/w/whois/whois_5.2.18.tar.xz"; \
+			URL="http://ftp.debian.org/debian/pool/main/w/whois/whois_5.2.20.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "libsodium" ]; then \
-			URL="https://download.libsodium.org/libsodium/releases/libsodium-1.0.15.tar.gz"; \
+			URL="https://download.libsodium.org/libsodium/releases/libsodium-1.0.16.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "dnscrypt" ]; then \
 			URL="https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-1.9.5.tar.bz2"; \
 		elif [ "$$PACKAGE_DIR" = "haveged" ]; then \
@@ -4936,16 +4979,16 @@ liblz4-install:
 		elif [ "$$PACKAGE_DIR" = "libgpg-error" ]; then \
 			URL="https://gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.27.tar.bz2"; \
 		elif [ "$$PACKAGE_DIR" = "util-linux" ]; then \
-			URL="https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.tar.xz"; \
+			URL="https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "lvm2" ]; then \
-			URL="https://mirrors.kernel.org/sourceware/lvm2/LVM2.2.02.176.tgz"; \
+			URL="https://mirrors.kernel.org/sourceware/lvm2/LVM2.2.02.177.tgz"; \
 		elif [ "$$PACKAGE_DIR" = "libgcrypt" ]; then \
-			URL="https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.8.1.tar.bz2"; \
+			URL="https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.8.2.tar.bz2"; \
 		elif [ "$$PACKAGE_DIR" = "cryptsetup-gcrypt" ] || \
 			[ "$$PACKAGE_DIR" = "cryptsetup-openssl" ] || \
 			[ "$$PACKAGE_DIR" = "cryptsetup-nettle" ] || \
 			[ "$$PACKAGE_DIR" = "cryptsetup-kernel" ]; then \
-			URL="https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz"; \
+			URL="https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.0.tar.xz"; \
 			PACKAGE_NAME="cryptsetup"; \
 		elif [ "$$PACKAGE_DIR" = "pps-tools" ]; then \
 			URL="https://github.com/redlab-i/pps-tools/archive/v1.0.1.tar.gz"; \
@@ -4998,6 +5041,8 @@ liblz4-install:
 			URL="http://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "liblz4" ]; then \
 			URL="https://github.com/lz4/lz4/archive/v1.8.0.tar.gz"; \
+		elif [ "$$PACKAGE_DIR" = "json-c" ]; then \
+			URL="http://http.debian.net/debian/pool/main/j/json-c/json-c_0.12.1.orig.tar.gz"; \
 		else \
 			URL="/$$PACKAGE_DIR-MISSING-URL"; \
 		fi; \
@@ -7540,26 +7585,26 @@ aaews-clean:
 	cd aaews && make clean
 
 #json-c-0.12
-json-c/stamp-h1:
-	cd $(TOP)/json-c && \
-	$(CONFIGURE) --enable-shared --disable-static \
-	ac_cv_func_realloc_0_nonnull=yes ac_cv_func_malloc_0_nonnull=yes \
-	CFLAGS="-Os -Wno-error $(EXTRACFLAGS)" \
-	LDFLAGS="$(EXTRALDFLAGS)"
-	touch $@
-
-json-c: json-c/stamp-h1
-	$(MAKE) -C $@
-
-json-c-install:
-	install -D json-c/.libs/libjson-c.so.2.0.1 $(INSTALLDIR)/json-c/usr/lib/libjson-c.so.2.0.1
-	$(STRIP) $(INSTALLDIR)/json-c/usr/lib/libjson-c.so.2.0.1
-	cd $(INSTALLDIR)/json-c/usr/lib && ln -sf libjson-c.so.2.0.1 libjson-c.so
-	cd $(INSTALLDIR)/json-c/usr/lib && ln -sf libjson-c.so.2.0.1 libjson-c.so.2
-
-json-c-clean:
-	-@[ ! -f json-c/Makefile ] || $(MAKE) -C json-c clean
-	-@rm -f json-c/stamp-h1
+#json-c/stamp-h1:
+#	cd $(TOP)/json-c && \
+#	$(CONFIGURE) --enable-shared --disable-static \
+#	ac_cv_func_realloc_0_nonnull=yes ac_cv_func_malloc_0_nonnull=yes \
+#	CFLAGS="-Os -Wno-error $(EXTRACFLAGS)" \
+#	LDFLAGS="$(EXTRALDFLAGS)"
+#	touch $@
+#
+#json-c: json-c/stamp-h1
+#	$(MAKE) -C $@
+#
+#json-c-install:
+#	install -D json-c/.libs/libjson-c.so.2.0.1 $(INSTALLDIR)/json-c/usr/lib/libjson-c.so.2.0.1
+#	$(STRIP) $(INSTALLDIR)/json-c/usr/lib/libjson-c.so.2.0.1
+#	cd $(INSTALLDIR)/json-c/usr/lib && ln -sf libjson-c.so.2.0.1 libjson-c.so
+#	cd $(INSTALLDIR)/json-c/usr/lib && ln -sf libjson-c.so.2.0.1 libjson-c.so.2
+#
+#json-c-clean:
+#	-@[ ! -f json-c/Makefile ] || $(MAKE) -C json-c clean
+#	-@rm -f json-c/stamp-h1
 
 phddns/stamp-h1:
 	cd phddns && $(CONFIGURE) --prefix="" \
