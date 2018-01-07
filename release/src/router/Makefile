@@ -4394,6 +4394,7 @@ transmission-mbedtls-configure:
 		LIBEVENT_LIBS="-L$(STAGEDIR)/usr/lib -levent" \
 		ZLIB_CFLAGS="-I$(STAGEDIR)/usr/include" \
 		ZLIB_LIBS="-L$(STAGEDIR)/usr/lib -lz" \
+		ac_cv_func_posix_fallocate=yes \
 		./autogen.sh \
 		--host=arm-brcm-linux-uclibcgnueabi \
 		--build=x86_64-linux-gnu \
