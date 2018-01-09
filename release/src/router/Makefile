@@ -1509,7 +1509,7 @@ clean-build: dummy
 		rm -rf "$(TOP)/util-linux"; \
 		rm -rf "$(TOP)/lvm2"; \
 		rm -rf "$(TOP)/libgcrypt"; \
-		rm -rf "$(TOP)/cryptsetup-gcrypt $(TOP)/cryptsetup-openssl $(TOP)/cryptsetup-nettle $(TOP)/cryptsetup-kernel"; \
+		rm -rf "$(TOP)/cryptsetup-gcrypt" "$(TOP)/cryptsetup-openssl" "$(TOP)/cryptsetup-nettle" "$(TOP)/cryptsetup-kernel"; \
 		rm -rf "$(TOP)/pps-tools"; \
 		rm -rf "$(TOP)/setserial"; \
 		rm -rf "$(TOP)/ntp"; \
@@ -1518,7 +1518,7 @@ clean-build: dummy
 		rm -rf "$(TOP)/rtl-sdr"; \
 		rm -rf "$(TOP)/rtl-entropy"; \
 		rm -rf "$(TOP)/ncurses"; \
-		rm -rf "$(TOP)/transmission-openssl $(TOP)/transmission-mbedtls"; \
+		rm -rf "$(TOP)/transmission-openssl" "$(TOP)/transmission-mbedtls"; \
 		rm -rf "$(TOP)/mbedtls"; \
 		rm -rf "$(TOP)/wget"; \
 		rm -rf "$(TOP)/apcupsd"; \
@@ -1626,7 +1626,7 @@ busybox-install: $(if $(RTCONFIG_PROTECTION_SERVER),protect_srv-stage,)
 	chmod 4755 $(INSTALLDIR)/busybox/bin/busybox
 
 busybox-clean:
-	$(MAKE) -C busybox distclean
+	-@$(MAKE) -C busybox distclean
 
 busybox-config:
 	$(MAKE) -C busybox menuconfig
@@ -4303,6 +4303,48 @@ rtl-entropy-install:
 	install -D $(STAGEDIR)/usr/bin/rtl_entropy $(INSTALLDIR)/rtl-entropy/usr/bin/
 	$(STRIP) $(INSTALLDIR)/rtl-entropy/usr/bin/rtl_entropy
 
+### curl
+
+curl: openssl mbedtls curl/Makefile
+	@$(MAKE) -C $@ $(PARALLEL_BUILD) && $(MAKE) $@-stage
+
+curl/Makefile: curl-unpack curl/configure
+	@[ ! -d curl ] || [ -f "$(STAGEDIR)/usr/lib/libcurl.so" ] || ( \
+	cd curl && \
+	$(CONFIGURE) \
+	CC=$(CC) \
+	CFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
+	CXXFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
+	CPPFLAGS="-ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
+	LDFLAGS="-ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib -L$(TOP)/openssl" \
+	LIBS="-lcrypto -lssl -ldl -lmbedx509 -lmbedcrypto -lmbedtls" \
+	--prefix=/usr \
+	--bindir=/usr/sbin \
+	--libdir=/usr/lib \
+	--enable-http \
+	--with-ssl=$(TOP)/openssl \
+	$(if $(RTCONFIG_IPV6),--enable-ipv6) \
+	--disable-gopher \
+	--disable-dict \
+	--disable-telnet \
+	--disable-manual \
+	--disable-libcurl-option \
+	--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+	)
+
+curl-install:
+	@$(SEP)
+	install -d $(INSTALLDIR)/curl/usr/lib/
+	cp -df curl/lib/.libs/libcurl.so* $(INSTALLDIR)/curl/usr/lib/
+	chmod u+w $(INSTALLDIR)/curl/usr/lib/*
+	$(STRIP) $(INSTALLDIR)/curl/usr/lib/libcurl.so*
+	install -D curl/src/.libs/curl $(INSTALLDIR)/curl/usr/sbin/curl
+	$(STRIP) $(INSTALLDIR)/curl/usr/sbin/curl
+
+curl-clean:
+	[ ! -f curl/Makefile ] || $(MAKE) -C curl clean
+	@rm -f curl/Makefile
+
 ### transmission-openssl
 
 transmission-openssl: openssl curl zlib libevent-2.0.21 transmission-openssl/Makefile
@@ -4922,7 +4964,7 @@ json-c/stamp-h1: json-c-unpack
 	CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
 	CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -D_GNU_SOURCE -I$(STAGEDIR)/usr/include" \
 	LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib" \
-	LIBS="" \
+	LIBS="-lm" \
 	ac_cv_func_realloc_0_nonnull=yes \
 	ac_cv_func_malloc_0_nonnull=yes \
 	$(CONFIGURE) \
@@ -4949,6 +4991,8 @@ json-c-install:
 	PACKAGE_DIR="$*"; \
 	if [ ! -d "$$PACKAGE_DIR" ]; then \
 		PACKAGE_NAME="$$PACKAGE_DIR"; \
+		VERSION=""; \
+		SOURCE_VERSION=""; \
 		if [ "$$PACKAGE_DIR" = "xzutils" ]; then \
 			URL="https://tukaani.org/xz/xz-5.2.3.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "zstd" ]; then \
@@ -5005,16 +5049,19 @@ json-c-install:
 			URL="https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz"; \
 		elif [ "$$PACKAGE_DIR" = "rtl-sdr" ]; then \
 			URL="git://git.osmocom.org/rtl-sdr.git"; \
-			VERSION="b04c2f9f035c5aede43d731e5d58e4725d2f8bb4"; \
+			VERSION="0.5.3+git"; \
+			SOURCE_VERSION="b04c2f9f035c5aede43d731e5d58e4725d2f8bb4"; \
 		elif [ "$$PACKAGE_DIR" = "rtl-entropy" ]; then \
 			URL="git://github.com/pwarren/rtl-entropy.git"; \
-			VERSION="142df23630ea6216c17e00dada85d1cd245bc22f"; \
+			VERSION="0.1.2+git"; \
+			SOURCE_VERSION="142df23630ea6216c17e00dada85d1cd245bc22f"; \
 		elif [ "$$PACKAGE_DIR" = "ncurses" ]; then \
 			URL="https://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz"; \
 		elif [ "$$PACKAGE_DIR" = "transmission-openssl" ] || \
 			[ "$$PACKAGE_DIR" = "transmission-mbedtls" ]; then \
 			URL="git://github.com/transmission/transmission.git"; \
-			VERSION="35fea28d1a37875ef7480ac061754df617805b19"; \
+			VERSION="2.92+git"; \
+			SOURCE_VERSION="5b29fe15561d40c40cbee635446df6b33e18d2c2"; \
 			PACKAGE_NAME="transmission"; \
 		elif [ "$$PACKAGE_DIR" = "mbedtls" ]; then \
 			URL="https://tls.mbed.org/download/mbedtls-2.6.0-gpl.tgz"; \
@@ -5052,9 +5099,9 @@ json-c-install:
 		DL_FILE="$${URL##*/}"; \
 		DL_PATH="$$DL_DIR/$$DL_FILE"; \
 		if [ "$${DL_FILE%.git*}" != "$$DL_FILE" ]; then \
-			DL_NAME="$$PACKAGE_NAME"; \
-			[ -z "$$VERSION" ] && VERSION="master"; \
-			DL_FILE="$${DL_NAME}-$${VERSION}.tar.gz"; \
+			[ -z "$$VERSION" ] && DL_NAME="$$PACKAGE_NAME" || DL_NAME="$$PACKAGE_NAME-$$VERSION"; \
+			[ -z "$$SOURCE_VERSION" ] && SOURCE_VERSION="master"; \
+			DL_FILE="$${DL_NAME}-$${SOURCE_VERSION}.tar.xz"; \
 			DL_PATH="$$DL_DIR/$$DL_FILE"; \
 			if [ ! -f "$$DL_PATH" ]; then \
 				git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
@@ -5063,23 +5110,25 @@ json-c-install:
 				done; \
 				ORIGDIR=$$PWD; \
 				cd $$DL_DIR/temp/$$DL_NAME; \
-				git checkout $$VERSION; \
+				git checkout $$SOURCE_VERSION; \
 				while [ $$? -ne 0 ]; do \
-					sleep 10; git checkout $$VERSION; \
+					sleep 10; git checkout $$SOURCE_VERSION; \
 				done; \
 				git submodule update --init --recursive; \
 				while [ $$? -ne 0 ]; do \
 					sleep 10; git submodule update --init --recursive; \
 				done; \
+				TAR_TIMESTAMP="`git log -1 --format='@%ct'`"; \
+				rm -rf .git; \
 				cd $$ORIGDIR; \
-				tar czvf $$DL_PATH -C $$DL_DIR/temp $$DL_NAME; \
+				tar --numeric-owner --owner=0 --group=0 --sort=name --mtime="$$TAR_TIMESTAMP" -cv -C "$$DL_DIR/temp" "$$DL_NAME" | xz -zc -7e > "$$DL_PATH"; \
 			fi; \
 		elif [ ! -f "$$DL_PATH" ]; then \
-			wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" "$$URL"; \
+			wget --tries=9 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" "$$URL"; \
 			while [ $$? -ne 0 ]; do \
 				sleep 10; \
 				[ ! -f "$$DL_PATH" ] || break; \
-				wget --tries=9999 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" "$$URL"; \
+				wget --tries=9 --retry-connrefused --waitretry=5 --directory-prefix="$$DL_DIR" "$$URL"; \
 			done; \
 			rm -rf "$$PACKAGE_DIR" || true; \
 		fi; \
@@ -6272,46 +6321,35 @@ fb_wifi-clean:
 
 #add by gauss
 #add install libcurl
-curl: curl/Makefile
-	@$(MAKE) -C $@ $(PARALLEL_BUILD) && $(MAKE) $@-stage
-
-curl/Makefile: curl-unpack curl/configure
-	@cd curl && \
-	$(CONFIGURE) \
-	CC=$(CC) \
-	CFLAGS="$(CFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
-	CXXFLAGS="$(CXXFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
-	CPPFLAGS="$(CPPFLAGS) -ffunction-sections -fdata-sections -O3 -pipe -march=armv7-a -mtune=cortex-a9 -fno-caller-saves -mfloat-abi=soft -Wall -fPIC -std=gnu99 -I$(STAGEDIR)/usr/include -I$(TOP)/openssl/include" \
-	LDFLAGS="$(LDFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -L$(STAGEDIR)/usr/lib -L$(TOP)/openssl" \
-	LIBS="-lcrypto -lssl -ldl" \
-	--prefix=/usr \
-	--bindir=/usr/sbin \
-	--libdir=/usr/lib \
-	--enable-http \
-	--with-ssl=$(TOP)/openssl \
-	$(if $(RTCONFIG_IPV6),--enable-ipv6) \
-	--disable-gopher \
-	--disable-dict \
-	--disable-telnet \
-	--disable-manual \
-	--disable-libcurl-option \
-	--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt
-
-curl-install:
-	@$(SEP)
-	install -d $(INSTALLDIR)/curl/usr/lib/
-	cp -df curl/lib/.libs/libcurl.so* $(INSTALLDIR)/curl/usr/lib/
-	chmod u+w $(INSTALLDIR)/curl/usr/lib/*
-	$(STRIP) $(INSTALLDIR)/curl/usr/lib/libcurl.so*
-#ifeq ($(RTCONFIG_SPEEDTEST),y)
-	# for speedtest
-	install -D curl/src/.libs/curl $(INSTALLDIR)/curl/usr/sbin/curl
-	$(STRIP) $(INSTALLDIR)/curl/usr/sbin/curl
-#endif
-
-curl-clean:
-	[ ! -f curl/Makefile ] || $(MAKE) -C curl clean
-	@rm -f curl/Makefile
+#curl-7.21.7: curl-7.21.7/Makefile
+#	@$(MAKE) -C $@ $(PARALLEL_BUILD) && $(MAKE) $@-stage && sed 's|/usr/lib|$(STAGEDIR)/usr/lib|g' -i $(STAGEDIR)/usr/lib/libcurl.la
+#
+#curl-7.21.7/Makefile: curl/configure
+#	@cd curl && $(CONFIGURE) CC=$(CC) \
+#		CFLAGS="-Os -Wall -ffunction-sections -fdata-sections" \
+#		--prefix=/usr --bindir=/usr/sbin --libdir=/usr/lib \
+#		--enable-http --with-ssl=$(TOP)/openssl/ssl \
+#		$(if $(RTCONFIG_IPV6),--enable-ipv6) \
+#		--disable-gopher --disable-dict --disable-telnet \
+#		--disable-proxy --disable-manual --disable-libcurl-option \
+#		CPPFLAGS='-I$(TOP)/openssl/include' \
+#		LDFLAGS='$(LDFLAGS) -L$(TOP)/openssl' LIBS='-lcrypto -lssl -ldl' \
+#		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt
+#
+#curl-7.21.7-install: curl-7.21.7
+#	@$(SEP)
+#	install -D curl-7.21.7/lib/.libs/libcurl.so.4.5.0 $(INSTALLDIR)/curl-7.21.7/usr/lib/libcurl.so.4.5.0
+#	$(STRIP) $(INSTALLDIR)/curl-7.21.7/usr/lib/libcurl.so.4.5.0
+#	cd $(INSTALLDIR)/curl-7.21.7/usr/lib && ln -sf libcurl.so.4.5.0 libcurl.so && ln -sf libcurl.so.4.5.0 libcurl.so.4
+##ifeq ($(RTCONFIG_SPEEDTEST),y)
+#	# for speedtest
+#	install -D curl-7.21.7/src/.libs/curl $(INSTALLDIR)/curl-7.21.7/usr/sbin/curl
+#	$(STRIP) $(INSTALLDIR)/curl-7.21.7/usr/sbin/curl
+##endif
+#
+#curl-7.21.7-clean:
+#	[ ! -f curl-7.21.7/Makefile ] || $(MAKE) -C curl-7.21.7 clean
+#	@rm -f curl-7.21.7/Makefile
 
 #snmp
 net-snmp-5.7.2/stamp-h1:
@@ -6841,7 +6879,7 @@ tftp:
 	cd tftp && CC=$(CC) && $(MAKE)
 
 tftp-clean:
-	cd tftp && $(MAKE) clean
+	-@cd tftp && $(MAKE) clean
 
 tftp-install:
 	# TPTP server
