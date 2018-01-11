@@ -5108,8 +5108,8 @@ json-c-install:
 				while [ $$? -ne 0 ]; do \
 					sleep 10; git clone $$URL $$DL_DIR/temp/$$DL_NAME; \
 				done; \
-				ORIGDIR=$$PWD; \
-				cd $$DL_DIR/temp/$$DL_NAME; \
+				ORIGDIR="$$PWD"; \
+				cd "$$DL_DIR/temp/$$DL_NAME"; \
 				git checkout $$SOURCE_VERSION; \
 				while [ $$? -ne 0 ]; do \
 					sleep 10; git checkout $$SOURCE_VERSION; \
@@ -5120,7 +5120,8 @@ json-c-install:
 				done; \
 				TAR_TIMESTAMP="`git log -1 --format='@%ct'`"; \
 				rm -rf .git; \
-				cd $$ORIGDIR; \
+				cd "$$ORIGDIR"; \
+				chmod -R g-w,o-w "$$DL_DIR/temp/$$DL_NAME"; \
 				tar --numeric-owner --owner=0 --group=0 --sort=name --mtime="$$TAR_TIMESTAMP" -cv -C "$$DL_DIR/temp" "$$DL_NAME" | xz -zc -7e > "$$DL_PATH"; \
 			fi; \
 		elif [ ! -f "$$DL_PATH" ]; then \
